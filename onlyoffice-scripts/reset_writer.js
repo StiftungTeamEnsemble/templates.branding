@@ -11,9 +11,10 @@
         name: "Normal",
         type: "paragraph",
         fontFamily: "Merriweather",
-        fontSize: null,
+        fontSize: 10,
         fontWeight: "normal",
         fontStyle: "normal",
+        lineHeight: 1.2,
         basedOnId: "",
       },
       {
@@ -24,6 +25,9 @@
         fontSize: 20,
         fontWeight: "bold",
         fontStyle: "normal",
+        lineHeight: 1,
+        paddingTop: "0.5cm",
+        paddingBottom: "0.5cm",
         basedOnId: "1077",
       },
       {
@@ -34,6 +38,9 @@
         fontSize: 15,
         fontWeight: "bold",
         fontStyle: "normal",
+        lineHeight: 1,
+        paddingTop: "0.3cm",
+        paddingBottom: "0.15cm",
         basedOnId: "1077",
       },
       {
@@ -44,6 +51,9 @@
         fontSize: 13,
         fontWeight: "bold",
         fontStyle: "normal",
+        lineHeight: 1,
+        paddingTop: "0.3cm",
+        paddingBottom: "0.15cm",
         basedOnId: "1077",
       },
       {
@@ -54,6 +64,9 @@
         fontSize: 11,
         fontWeight: "bold",
         fontStyle: "normal",
+        lineHeight: 1,
+        paddingTop: "0.15cm",
+        paddingBottom: "0.07cm",
         basedOnId: "1077",
       },
       {
@@ -70,6 +83,9 @@
           a: 255,
         },
         fontStyle: "normal",
+        lineHeight: 1.2,
+        paddingTop: "0.15cm",
+        paddingBottom: "0.07cm",
         basedOnId: "885",
       },
     ],
@@ -89,10 +105,53 @@
 
   function toHalfPoints(fontSizePt) {
     // OnlyOffice stores font sizes in half-points (e.g., 20pt -> 40)
-    var n =
-      typeof fontSizePt === "string" ? parseFloat(fontSizePt) : fontSizePt;
+    var pts = toPoints(fontSizePt);
+    if (pts == null) return null;
+    return Math.round(pts * 2);
+  }
+
+  function toPoints(length) {
+    // Accept numbers (points) or strings with pt/cm suffixes (CSS-like convenience)
+    if (typeof length === "number") {
+      if (!isFinite(length)) return null;
+      return length;
+    }
+    if (typeof length !== "string") return null;
+    var raw = length.trim().toLowerCase();
+    if (!raw.length) return null;
+
+    var factor = 1; // default assume pt
+    if (raw.endsWith("cm")) {
+      factor = 28.3464567; // 1 cm in points
+      raw = raw.slice(0, -2);
+    } else if (raw.endsWith("pt")) {
+      raw = raw.slice(0, -2);
+    }
+
+    var n = parseFloat(raw);
     if (!isFinite(n)) return null;
-    return Math.round(n * 2);
+    return n * factor;
+  }
+
+  function toTwips(length) {
+    // Word/OnlyOffice spacing measures use twentieths of a point (twips)
+    var pts = toPoints(length);
+    if (pts == null) return null;
+    return Math.round(pts * 20);
+  }
+
+  function toLineSpacing(lineHeight) {
+    // CSS-like: if number => multiple, if length => absolute
+    if (lineHeight == null || lineHeight === "") return null;
+
+    if (typeof lineHeight === "number") {
+      if (!isFinite(lineHeight)) return null;
+      return { mode: "multiple", value: Math.round(lineHeight * 240) };
+    }
+
+    var tw = toTwips(lineHeight);
+    if (tw != null) return { mode: "exact", value: tw };
+    return null;
   }
 
   function setTextPrFromRecipe(style, recipe) {
@@ -148,6 +207,38 @@
     }
   }
 
+  function setParaPrFromRecipe(style, recipe) {
+    var pp =
+      (style.GetParagraphPr && style.GetParagraphPr()) ||
+      (style.GetParaPr && style.GetParaPr());
+    if (!pp) return;
+
+    var ls = toLineSpacing(recipe.lineHeight);
+    if (ls && ls.value != null) {
+      try {
+        pp.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
+      } catch (e) {}
+    }
+
+    if (recipe.paddingTop != null && recipe.paddingTop !== "") {
+      var before = toTwips(recipe.paddingTop);
+      if (before != null) {
+        try {
+          pp.SetSpacingBefore(before);
+        } catch (e) {}
+      }
+    }
+
+    if (recipe.paddingBottom != null && recipe.paddingBottom !== "") {
+      var after = toTwips(recipe.paddingBottom);
+      if (after != null) {
+        try {
+          pp.SetSpacingAfter(after);
+        } catch (e) {}
+      }
+    }
+  }
+
   // Get all styles, filter to paragraph styles, and apply updates where names match
   var allStyles = (doc.GetAllStyles && doc.GetAllStyles()) || [];
   var updated = 0,
@@ -164,6 +255,7 @@
     seen++;
     try {
       setTextPrFromRecipe(st, byName[name]);
+      setParaPrFromRecipe(st, byName[name]);
       updated++;
     } catch (e) {
       // swallow; continue with the next style
