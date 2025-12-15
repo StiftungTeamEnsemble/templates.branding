@@ -1,15 +1,16 @@
+// Script for OnlyOffice to reset paragraph styles based on an input recipe.
+// Matches styles by name and updates their text properties accordingly.
+
 (function () {
   var doc = Api.GetDocument();
 
-  // Script for OnlyOffice to reset paragraph styles based on an input recipe.
-  // Matches styles by name and updates their text properties accordingly.
   const INPUT = {
     styles: [
       {
         styleId: "1077",
         name: "Normal",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Merriweather",
         fontSize: null,
         fontWeight: "normal",
         fontStyle: "normal",
@@ -19,7 +20,7 @@
         styleId: "901",
         name: "Heading 1",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Geist",
         fontSize: 20,
         fontWeight: "bold",
         fontStyle: "normal",
@@ -29,7 +30,7 @@
         styleId: "903",
         name: "Heading 2",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Geist",
         fontSize: 15,
         fontWeight: "bold",
         fontStyle: "normal",
@@ -39,7 +40,7 @@
         styleId: "905",
         name: "Heading 3",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Geist",
         fontSize: 13,
         fontWeight: "bold",
         fontStyle: "normal",
@@ -49,7 +50,7 @@
         styleId: "907",
         name: "Heading 4",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Geist",
         fontSize: 11,
         fontWeight: "bold",
         fontStyle: "normal",
@@ -59,7 +60,7 @@
         styleId: "739",
         name: "Caption",
         type: "paragraph",
-        fontFamily: "Open Sans",
+        fontFamily: "Geist",
         fontSize: 9,
         fontWeight: "normal",
         color: {
