@@ -5,6 +5,12 @@
   var doc = Api.GetDocument();
 
   const INPUT = {
+    page: {
+      paddingTop: "1.5cm",
+      paddingBottom: "3.2cm",
+      paddingLeft: "3cm",
+      paddingRight: "2cm",
+    },
     styles: [
       {
         styleId: "1077",
@@ -213,10 +219,13 @@
       (style.GetParaPr && style.GetParaPr());
     if (!pp) return;
 
+    var styleName = style && style.GetName ? style.GetName() : "<unknown>";
+
     var ls = toLineSpacing(recipe.lineHeight);
     if (ls && ls.value != null) {
       try {
         pp.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
+        console.log("Applied lineHeight", ls, "for", styleName);
       } catch (e) {}
     }
 
@@ -225,6 +234,7 @@
       if (before != null) {
         try {
           pp.SetSpacingBefore(before);
+          console.log("Applied paddingTop", before, "twips for", styleName);
         } catch (e) {}
       }
     }
@@ -234,8 +244,57 @@
       if (after != null) {
         try {
           pp.SetSpacingAfter(after);
+          console.log("Applied paddingBottom", after, "twips for", styleName);
         } catch (e) {}
       }
+    }
+  }
+
+  function setPageFromRecipe(doc, pageRecipe) {
+    if (!pageRecipe) return;
+
+    // Prefer final section (matches working minimal sample)
+    var section = (doc.GetFinalSection && doc.GetFinalSection()) || null;
+    if (!section) {
+      var sections = doc.GetSections ? doc.GetSections() : [];
+      if (sections && sections.length) section = sections[0];
+    }
+
+    if (!section) {
+      console.log("No section found for page settings");
+      return;
+    }
+
+    var top = toTwips(pageRecipe.paddingTop);
+    var bottom = toTwips(pageRecipe.paddingBottom);
+    var left = toTwips(pageRecipe.paddingLeft);
+    var right = toTwips(pageRecipe.paddingRight);
+    console.log("Computed margins (twips)", {
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+    });
+
+    try {
+      if (section.SetPageMargins) {
+        section.SetPageMargins(left || 0, top || 0, right || 0, bottom || 0);
+        console.log("SetPageMargins applied on section");
+        return;
+      }
+      if (section.SetMargins) {
+        section.SetMargins(left || 0, top || 0, right || 0, bottom || 0);
+        console.log("SetMargins applied on section");
+        return;
+      }
+      // Per-side fallbacks
+      if (section.SetMarginTop) section.SetMarginTop(top || 0);
+      if (section.SetMarginBottom) section.SetMarginBottom(bottom || 0);
+      if (section.SetMarginLeft) section.SetMarginLeft(left || 0);
+      if (section.SetMarginRight) section.SetMarginRight(right || 0);
+      console.log("Per-side margin setters applied on section (if available)");
+    } catch (e) {
+      console.log("Failed to apply margins", e);
     }
   }
 
@@ -261,6 +320,11 @@
       // swallow; continue with the next style
     }
   }
+
+  // Apply page paddings (margins) if provided
+  try {
+    setPageFromRecipe(doc, INPUT.page);
+  } catch (e) {}
 
   // Leave a small comment summary so you see what happened
   var report = {
