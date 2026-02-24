@@ -184,7 +184,9 @@
     if (recipe.fontFamily && typeof recipe.fontFamily === "string") {
       try {
         tp.SetFontFamily(recipe.fontFamily);
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to set fontFamily for style", style, e);
+      }
     }
 
     // fontSize (points -> half-points)
@@ -193,7 +195,9 @@
       if (szHps != null) {
         try {
           tp.SetFontSize(szHps);
-        } catch (e) {}
+        } catch (e) {
+          console.error("Failed to set fontSize for style", style, e);
+        }
       }
     }
 
@@ -201,14 +205,18 @@
     if (recipe.fontWeight === "bold" || recipe.fontWeight === "normal") {
       try {
         tp.SetBold(recipe.fontWeight === "bold");
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to set fontWeight for style", style, e);
+      }
     }
 
     // fontStyle
     if (recipe.fontStyle === "italic" || recipe.fontStyle === "normal") {
       try {
         tp.SetItalic(recipe.fontStyle === "italic");
-      } catch (e) {}
+      } catch (e) {
+        console.error("Failed to set fontStyle for style", style, e);
+      }
     }
 
     // color
@@ -224,6 +232,41 @@
         console.log("Set color for style", style.GetName(), recipe.color);
       } catch (e) {
         console.error("Failed to set color for style", style, e);
+      }
+    }
+
+    // letterSpacing – supports "em" (relative to fontSize) or absolute lengths (pt/cm)
+    if (recipe.letterSpacing != null && recipe.letterSpacing !== "") {
+      var spacingTwips = null;
+      if (
+        typeof recipe.letterSpacing === "string" &&
+        recipe.letterSpacing.trim().toLowerCase().endsWith("em")
+      ) {
+        var emVal = parseFloat(recipe.letterSpacing.trim().slice(0, -2));
+        var baseSizePt =
+          typeof recipe.fontSize === "number"
+            ? recipe.fontSize
+            : parseFloat(recipe.fontSize);
+        if (isFinite(emVal) && isFinite(baseSizePt)) {
+          // em × fontSizePt → points; points × 20 → twips
+          spacingTwips = Math.round(emVal * baseSizePt * 20);
+        }
+      } else {
+        // Absolute length (pt / cm)
+        spacingTwips = toTwips(recipe.letterSpacing);
+      }
+      if (spacingTwips != null) {
+        try {
+          tp.SetSpacing(spacingTwips);
+          console.log(
+            "Set letterSpacing",
+            spacingTwips,
+            "twips for style",
+            style.GetName && style.GetName()
+          );
+        } catch (e) {
+          console.error("Failed to set letterSpacing for style", style, e);
+        }
       }
     }
   }
