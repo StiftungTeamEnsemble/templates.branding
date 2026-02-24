@@ -1,6 +1,8 @@
 // Script for OnlyOffice to reset paragraph styles based on an input recipe.
 // Matches styles by name and updates their text properties accordingly.
 
+const { Children } = require("react");
+
 (function () {
   const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
   const CM_TO_PT = 72 / 2.54; // ≈ 28.346456692913385 (or MM_TO_PT * 10)
@@ -9,10 +11,64 @@
 
   const INPUT = {
     page: {
-      paddingTop: "48.5mm",
+      paddingTop: "26mm",
       paddingBottom: "24.5mm",
       paddingLeft: "48.5mm",
       paddingRight: "10mm",
+      headers: {
+        default: {
+          childrenDeleteBeforeCreate: true,
+          children: [
+            {
+              type: "line",
+              left: "0mm",
+              top: "0mm",
+              width: "100mm",
+              borderWidth: "0.5pt",
+              borderColor: { r: 0, g: 0, b: 0, a: 255 },
+            },
+            {
+              type: "textbox",
+              left: "0mm",
+              top: "0mm",
+              width: "100mm",
+              height: "20mm",
+              children: [
+                {
+                  type: "paragraph",
+                  text: "Page 1 Header",
+                },
+              ],
+            },
+          ],
+        },
+        first: {
+          childrenDeleteBeforeCreate: true,
+          children: [
+            {
+              type: "line",
+              left: "0mm",
+              top: "0mm",
+              width: "100mm",
+              borderWidth: "0.5pt",
+              borderColor: { r: 0, g: 0, b: 0, a: 255 },
+            },
+            {
+              type: "textbox",
+              left: "0mm",
+              top: "0mm",
+              width: "100mm",
+              height: "20mm",
+              children: [
+                {
+                  type: "paragraph",
+                  text: "Other Page Header",
+                },
+              ],
+            },
+          ],
+        },
+      },
     },
     styles: [
       {
