@@ -36,6 +36,7 @@
                 {
                   type: "paragraph",
                   text: "Page 1 Header",
+                  className: "Heading 1",
                 },
               ],
             },
@@ -58,10 +59,12 @@
               top: "0mm",
               width: "100mm",
               height: "20mm",
+              color: { r: 255, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
                   text: "Other Page Header",
+                  className: "Normal",
                 },
               ],
             },
@@ -391,131 +394,255 @@
   }
 
   function createLineShape(recipe) {
+    console.log("createLineShape: recipe =", JSON.stringify(recipe));
     var widthEmu = toEmu(recipe.width) || 0;
+    console.log("createLineShape: widthEmu =", widthEmu);
 
     var strokeWidth = toEmu(recipe.borderWidth || "0.5pt") || 6350;
     var strokeColor = recipe.borderColor || { r: 0, g: 0, b: 0 };
-    var stroke = Api.CreateStroke(
-      strokeWidth,
-      Api.CreateSolidFill(
-        Api.CreateRGBColor(strokeColor.r, strokeColor.g, strokeColor.b),
-      ),
-    );
+    console.log("createLineShape: strokeWidth =", strokeWidth, "strokeColor =", JSON.stringify(strokeColor));
+
+    var rgbColor = Api.CreateRGBColor(strokeColor.r, strokeColor.g, strokeColor.b);
+    console.log("createLineShape: rgbColor =", rgbColor, "type =", typeof rgbColor);
+    var solidFill = Api.CreateSolidFill(rgbColor);
+    console.log("createLineShape: solidFill =", solidFill, "type =", typeof solidFill);
+    var stroke = Api.CreateStroke(strokeWidth, solidFill);
+    console.log("createLineShape: stroke =", stroke, "type =", typeof stroke);
     var fill = Api.CreateNoFill();
+    console.log("createLineShape: fill =", fill, "type =", typeof fill);
 
-    var shape = Api.CreateShape("line", widthEmu, 0, fill, stroke);
+    var shape = Api.CreateShape("line", widthEmu, 1, fill, stroke);
+    console.log("createLineShape: shape =", shape, "type =", typeof shape);
+    if (!shape) {
+      console.error("createLineShape: Api.CreateShape returned falsy!");
+      return null;
+    }
 
-    shape.SetWrappingStyle("inFront");
+    try { shape.SetWrappingStyle("inFront"); } catch (e) { console.error("createLineShape: SetWrappingStyle failed", e); }
     var leftEmu = toEmu(recipe.left) || 0;
     var topEmu = toEmu(recipe.top) || 0;
-    shape.SetHorPosition("column", leftEmu);
-    shape.SetVerPosition("paragraph", topEmu);
+    console.log("createLineShape: position leftEmu =", leftEmu, "topEmu =", topEmu);
+    try { shape.SetHorPosition("column", leftEmu); } catch (e) { console.error("createLineShape: SetHorPosition failed", e); }
+    try { shape.SetVerPosition("paragraph", topEmu); } catch (e) { console.error("createLineShape: SetVerPosition failed", e); }
 
+    console.log("createLineShape: done");
     return shape;
   }
 
   function createTextboxShape(recipe) {
+    console.log("createTextboxShape: recipe =", JSON.stringify(recipe));
     var widthEmu = toEmu(recipe.width) || 0;
     var heightEmu = toEmu(recipe.height) || 0;
+    console.log("createTextboxShape: widthEmu =", widthEmu, "heightEmu =", heightEmu);
 
     var fill = Api.CreateNoFill();
     var stroke = Api.CreateStroke(0, Api.CreateNoFill());
+    console.log("createTextboxShape: fill =", fill, "stroke =", stroke);
 
     var shape = Api.CreateShape("rect", widthEmu, heightEmu, fill, stroke);
-
-    shape.SetWrappingStyle("inFront");
-    var leftEmu = toEmu(recipe.left) || 0;
-    var topEmu = toEmu(recipe.top) || 0;
-    shape.SetHorPosition("column", leftEmu);
-    shape.SetVerPosition("paragraph", topEmu);
-
-    // Populate text content inside the textbox
-    if (recipe.children && recipe.children.length) {
-      var docContent = shape.GetDocContent();
-      if (docContent) {
-        // Remove default empty paragraph(s)
-        var elCount = docContent.GetElementsCount
-          ? docContent.GetElementsCount()
-          : 0;
-        for (var i = elCount - 1; i >= 0; i--) {
-          try {
-            docContent.RemoveElement(i);
-          } catch (e) {}
-        }
-
-        for (var c = 0; c < recipe.children.length; c++) {
-          var child = recipe.children[c];
-          if (child.type === "paragraph") {
-            var para = Api.CreateParagraph();
-            if (child.text) para.AddText(child.text);
-            docContent.Push(para);
-          }
-        }
-      }
+    console.log("createTextboxShape: shape =", shape, "type =", typeof shape);
+    if (!shape) {
+      console.error("createTextboxShape: Api.CreateShape returned falsy!");
+      return null;
     }
 
+    try { shape.SetWrappingStyle("inFront"); } catch (e) { console.error("createTextboxShape: SetWrappingStyle failed", e); }
+    var leftEmu = toEmu(recipe.left) || 0;
+    var topEmu = toEmu(recipe.top) || 0;
+    console.log("createTextboxShape: position leftEmu =", leftEmu, "topEmu =", topEmu);
+    try { shape.SetHorPosition("column", leftEmu); } catch (e) { console.error("createTextboxShape: SetHorPosition failed", e); }
+    try { shape.SetVerPosition("paragraph", topEmu); } catch (e) { console.error("createTextboxShape: SetVerPosition failed", e); }
+
+    console.log("createTextboxShape: done (content will be populated after adding to document)");
     return shape;
   }
 
+  function populateTextboxContent(doc, shape, recipe) {
+    // Must be called AFTER the shape has been added to the document (via AddDrawing + Push)
+    if (!recipe.children || !recipe.children.length) return;
+
+    var docContent = shape.GetDocContent();
+    console.log("populateTextboxContent: docContent =", docContent, "type =", typeof docContent);
+    if (!docContent) {
+      console.error("populateTextboxContent: GetDocContent() returned falsy");
+      return;
+    }
+
+    // Remove default empty paragraph(s)
+    var elCount = docContent.GetElementsCount ? docContent.GetElementsCount() : 0;
+    console.log("populateTextboxContent: existing elements =", elCount);
+    for (var i = elCount - 1; i >= 0; i--) {
+      try {
+        docContent.RemoveElement(i);
+      } catch (e) { console.error("populateTextboxContent: RemoveElement failed at", i, e); }
+    }
+
+    for (var c = 0; c < recipe.children.length; c++) {
+      var child = recipe.children[c];
+      if (child.type === "paragraph") {
+        var para = Api.CreateParagraph();
+
+        // Apply paragraph style by className (style name in the document)
+        if (child.className) {
+          try {
+            var style = doc.GetStyle(child.className);
+            if (style) {
+              para.SetStyle(style);
+              console.log("populateTextboxContent: set style", child.className);
+            } else {
+              console.error("populateTextboxContent: style not found:", child.className);
+            }
+          } catch (e) {
+            console.error("populateTextboxContent: SetStyle failed for", child.className, e);
+          }
+        }
+
+        if (child.text) {
+          para.AddText(child.text);
+
+          let color =  { r: 0, g: 0, b: 0 };
+          para.SetColor(color.r, color.g, color.b);
+        }
+        try {
+          docContent.Push(para);
+          console.log("populateTextboxContent: pushed paragraph with text:", child.text);
+        } catch (e) { console.error("populateTextboxContent: Push paragraph failed", e); }
+      }
+    }
+  }
+
   function setHeadersFromRecipe(doc, section, headersRecipe) {
-    if (!headersRecipe || !section) return;
+    console.log("setHeadersFromRecipe: called");
+    console.log("setHeadersFromRecipe: section =", section, "type =", typeof section);
+    console.log("setHeadersFromRecipe: headersRecipe keys =", headersRecipe ? Object.keys(headersRecipe) : "null");
+    if (!headersRecipe || !section) {
+      console.error("setHeadersFromRecipe: bailing — headersRecipe or section is falsy");
+      return;
+    }
+
+    // Log available section methods for debugging
+    var sectionMethods = [];
+    for (var key in section) {
+      if (typeof section[key] === "function") sectionMethods.push(key);
+    }
+    console.log("setHeadersFromRecipe: section methods =", sectionMethods.join(", "));
 
     var headerTypes = ["default", "first"];
 
     for (var h = 0; h < headerTypes.length; h++) {
       var hType = headerTypes[h];
       var hRecipe = headersRecipe[hType];
-      if (!hRecipe) continue;
-
-      // Enable different first-page header/footer when "first" is specified
-      if (hType === "first" && section.SetTitlePage) {
-        section.SetTitlePage(true);
-      }
-
-      var header = section.GetHeader(hType, true);
-      if (!header) {
-        console.log("Could not get/create header for type:", hType);
+      if (!hRecipe) {
+        console.log("setHeadersFromRecipe: no recipe for header type:", hType);
         continue;
       }
+
+      console.log("setHeadersFromRecipe: processing header type:", hType);
+
+      // Map recipe header type names to OnlyOffice API header type names
+      // OnlyOffice uses: "default", "title" (first page), "even"
+      var apiHeaderType = hType === "first" ? "title" : hType;
+
+      // Enable different first-page header/footer when "first" is specified
+      if (hType === "first") {
+        if (section.SetTitlePage) {
+          try {
+            section.SetTitlePage(true);
+            console.log("setHeadersFromRecipe: SetTitlePage(true) called");
+          } catch (e) {
+            console.error("setHeadersFromRecipe: SetTitlePage failed", e);
+          }
+        } else {
+          console.log("setHeadersFromRecipe: section has no SetTitlePage method");
+        }
+      }
+
+      console.log("setHeadersFromRecipe: calling section.GetHeader(", apiHeaderType, ", true)");
+      var header = null;
+      try {
+        header = section.GetHeader(apiHeaderType, true);
+      } catch (e) {
+        console.error("setHeadersFromRecipe: section.GetHeader threw", e);
+      }
+      console.log("setHeadersFromRecipe: header =", header, "type =", typeof header);
+      if (!header) {
+        console.error("setHeadersFromRecipe: Could not get/create header for type:", hType);
+        continue;
+      }
+
+      // Log header methods
+      var headerMethods = [];
+      for (var hk in header) {
+        if (typeof header[hk] === "function") headerMethods.push(hk);
+      }
+      console.log("setHeadersFromRecipe: header methods =", headerMethods.join(", "));
 
       // Clear existing content if requested
       if (hRecipe.childrenDeleteBeforeCreate) {
         var count = header.GetElementsCount ? header.GetElementsCount() : 0;
+        console.log("setHeadersFromRecipe: clearing", count, "existing elements from", hType, "header");
         for (var r = count - 1; r >= 0; r--) {
           try {
             header.RemoveElement(r);
-          } catch (e) {}
+          } catch (e) {
+            console.error("setHeadersFromRecipe: RemoveElement(", r, ") failed", e);
+          }
         }
       }
 
       // Create children (line / textbox)
       var children = hRecipe.children || [];
+      console.log("setHeadersFromRecipe: creating", children.length, "children for", hType);
       for (var c = 0; c < children.length; c++) {
         var childRecipe = children[c];
+        console.log("setHeadersFromRecipe: child[", c, "] type =", childRecipe.type);
         var shape = null;
 
-        if (childRecipe.type === "line") {
-          shape = createLineShape(childRecipe);
-        } else if (childRecipe.type === "textbox") {
-          shape = createTextboxShape(childRecipe);
+        try {
+          if (childRecipe.type === "line") {
+            shape = createLineShape(childRecipe);
+          } else if (childRecipe.type === "textbox") {
+            shape = createTextboxShape(childRecipe); 
+          } else {
+            console.log("setHeadersFromRecipe: unknown child type:", childRecipe.type);
+          }
+        } catch (e) {
+          console.error("setHeadersFromRecipe: shape creation failed for child[", c, "]", e);
         }
 
+        console.log("setHeadersFromRecipe: shape =", shape, "type =", typeof shape);
         if (shape) {
-          var para = Api.CreateParagraph();
-          para.AddDrawing(shape);
-          header.Push(para);
-          console.log("Added", childRecipe.type, "to", hType, "header");
+          try {
+            var para = Api.CreateParagraph();
+            para.AddDrawing(shape);
+            header.Push(para);
+            console.log("setHeadersFromRecipe: Added", childRecipe.type, "to", hType, "header");
+
+            // Populate textbox content AFTER it's been added to the document
+            if (childRecipe.type === "textbox" && childRecipe.children) {
+              try {
+                populateTextboxContent(doc, shape, childRecipe);
+              } catch (e) {
+                console.error("setHeadersFromRecipe: populateTextboxContent failed", e);
+              }
+            }
+          } catch (e) {
+            console.error("setHeadersFromRecipe: failed to add shape to header", e);
+          }
+        } else {
+          console.error("setHeadersFromRecipe: shape is falsy for child[", c, "], skipping");
         }
       }
 
       console.log(
-        "Applied header for type:",
+        "setHeadersFromRecipe: done with header type:",
         hType,
-        "with",
+        "— added",
         children.length,
         "children",
       );
     }
+    console.log("setHeadersFromRecipe: complete");
   }
 
   function setPageFromRecipe(doc, pageRecipe) {
@@ -544,33 +671,36 @@
       right: right,
     });
 
+    var marginsApplied = false;
     try {
       if (section.SetPageMargins) {
         section.SetPageMargins(left || 0, top || 0, right || 0, bottom || 0);
         console.log("SetPageMargins applied on section");
-        return;
-      }
-      if (section.SetMargins) {
+        marginsApplied = true;
+      } else if (section.SetMargins) {
         section.SetMargins(left || 0, top || 0, right || 0, bottom || 0);
         console.log("SetMargins applied on section");
-        return;
+        marginsApplied = true;
       }
-      // Per-side fallbacks
-      if (section.SetMarginTop) section.SetMarginTop(top || 0);
-      if (section.SetMarginBottom) section.SetMarginBottom(bottom || 0);
-      if (section.SetMarginLeft) section.SetMarginLeft(left || 0);
-      if (section.SetMarginRight) section.SetMarginRight(right || 0);
-      console.log("Per-side margin setters applied on section (if available)");
+      if (!marginsApplied) {
+        // Per-side fallbacks
+        if (section.SetMarginTop) section.SetMarginTop(top || 0);
+        if (section.SetMarginBottom) section.SetMarginBottom(bottom || 0);
+        if (section.SetMarginLeft) section.SetMarginLeft(left || 0);
+        if (section.SetMarginRight) section.SetMarginRight(right || 0);
+        console.log("Per-side margin setters applied on section (if available)");
+      }
     } catch (e) {
-      console.log("Failed to apply margins", e);
+      console.error("Failed to apply margins", e);
     }
 
     // Apply headers if provided
+    console.log("setPageFromRecipe: headers recipe present =", !!pageRecipe.headers);
     if (pageRecipe.headers) {
       try {
         setHeadersFromRecipe(doc, section, pageRecipe.headers);
       } catch (e) {
-        console.log("Failed to apply headers", e);
+        console.error("setPageFromRecipe: Failed to apply headers", e);
       }
     }
   }
@@ -599,9 +729,13 @@
   }
 
   // Apply page paddings (margins) if provided
+  console.log("Main: applying page recipe...");
   try {
     setPageFromRecipe(doc, INPUT.page);
-  } catch (e) {}
+    console.log("Main: setPageFromRecipe completed");
+  } catch (e) {
+    console.error("Main: setPageFromRecipe threw", e);
+  }
 
   // Leave a small comment summary so you see what happened
   var report = {
