@@ -33,6 +33,7 @@
         fontWeight: "bold",
         fontStyle: "normal",
         lineHeight: 1.1,
+        textIndent: "-3.1cm",
         paddingTop: "0cm",
         paddingBottom: "0.1cm",
         basedOnId: "1077",
@@ -304,6 +305,19 @@
           pp.SetSpacingAfter(after);
           console.log("Applied paddingBottom", after, "twips for", styleName);
         } catch (e) {}
+      }
+    }
+
+    // textIndent (first-line indent, in twips)
+    if (recipe.textIndent != null && recipe.textIndent !== "") {
+      var indent = toTwips(recipe.textIndent);
+      if (indent != null) {
+        try {
+          pp.SetIndLeft(indent);
+          console.log("Applied textIndent", indent, "twips for", styleName);
+        } catch (e) {
+          console.error("Failed to set textIndent for style", styleName, e);
+        }
       }
     }
   }
