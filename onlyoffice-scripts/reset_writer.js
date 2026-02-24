@@ -1,7 +1,6 @@
 // Script for OnlyOffice to reset paragraph styles based on an input recipe.
 // Matches styles by name and updates their text properties accordingly.
 
-const { Children } = require("react");
 
 (function () {
   const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
@@ -224,6 +223,13 @@ const { Children } = require("react");
     return Math.round(pts * 20);
   }
 
+  function toEmu(length) {
+    // English Metric Units: 1 pt = 12700 EMU
+    var pts = toPoints(length);
+    if (pts == null) return null;
+    return Math.round(pts * 12700);
+  }
+
   function toLineSpacing(lineHeight) {
     // CSS-like: if number => multiple, if length => absolute
     if (lineHeight == null || lineHeight === "") return null;
@@ -384,6 +390,134 @@ const { Children } = require("react");
     }
   }
 
+  function createLineShape(recipe) {
+    var widthEmu = toEmu(recipe.width) || 0;
+
+    var strokeWidth = toEmu(recipe.borderWidth || "0.5pt") || 6350;
+    var strokeColor = recipe.borderColor || { r: 0, g: 0, b: 0 };
+    var stroke = Api.CreateStroke(
+      strokeWidth,
+      Api.CreateSolidFill(
+        Api.CreateRGBColor(strokeColor.r, strokeColor.g, strokeColor.b),
+      ),
+    );
+    var fill = Api.CreateNoFill();
+
+    var shape = Api.CreateShape("line", widthEmu, 0, fill, stroke);
+
+    shape.SetWrappingStyle("inFront");
+    var leftEmu = toEmu(recipe.left) || 0;
+    var topEmu = toEmu(recipe.top) || 0;
+    shape.SetHorPosition("column", leftEmu);
+    shape.SetVerPosition("paragraph", topEmu);
+
+    return shape;
+  }
+
+  function createTextboxShape(recipe) {
+    var widthEmu = toEmu(recipe.width) || 0;
+    var heightEmu = toEmu(recipe.height) || 0;
+
+    var fill = Api.CreateNoFill();
+    var stroke = Api.CreateStroke(0, Api.CreateNoFill());
+
+    var shape = Api.CreateShape("rect", widthEmu, heightEmu, fill, stroke);
+
+    shape.SetWrappingStyle("inFront");
+    var leftEmu = toEmu(recipe.left) || 0;
+    var topEmu = toEmu(recipe.top) || 0;
+    shape.SetHorPosition("column", leftEmu);
+    shape.SetVerPosition("paragraph", topEmu);
+
+    // Populate text content inside the textbox
+    if (recipe.children && recipe.children.length) {
+      var docContent = shape.GetDocContent();
+      if (docContent) {
+        // Remove default empty paragraph(s)
+        var elCount = docContent.GetElementsCount
+          ? docContent.GetElementsCount()
+          : 0;
+        for (var i = elCount - 1; i >= 0; i--) {
+          try {
+            docContent.RemoveElement(i);
+          } catch (e) {}
+        }
+
+        for (var c = 0; c < recipe.children.length; c++) {
+          var child = recipe.children[c];
+          if (child.type === "paragraph") {
+            var para = Api.CreateParagraph();
+            if (child.text) para.AddText(child.text);
+            docContent.Push(para);
+          }
+        }
+      }
+    }
+
+    return shape;
+  }
+
+  function setHeadersFromRecipe(doc, section, headersRecipe) {
+    if (!headersRecipe || !section) return;
+
+    var headerTypes = ["default", "first"];
+
+    for (var h = 0; h < headerTypes.length; h++) {
+      var hType = headerTypes[h];
+      var hRecipe = headersRecipe[hType];
+      if (!hRecipe) continue;
+
+      // Enable different first-page header/footer when "first" is specified
+      if (hType === "first" && section.SetTitlePage) {
+        section.SetTitlePage(true);
+      }
+
+      var header = section.GetHeader(hType, true);
+      if (!header) {
+        console.log("Could not get/create header for type:", hType);
+        continue;
+      }
+
+      // Clear existing content if requested
+      if (hRecipe.childrenDeleteBeforeCreate) {
+        var count = header.GetElementsCount ? header.GetElementsCount() : 0;
+        for (var r = count - 1; r >= 0; r--) {
+          try {
+            header.RemoveElement(r);
+          } catch (e) {}
+        }
+      }
+
+      // Create children (line / textbox)
+      var children = hRecipe.children || [];
+      for (var c = 0; c < children.length; c++) {
+        var childRecipe = children[c];
+        var shape = null;
+
+        if (childRecipe.type === "line") {
+          shape = createLineShape(childRecipe);
+        } else if (childRecipe.type === "textbox") {
+          shape = createTextboxShape(childRecipe);
+        }
+
+        if (shape) {
+          var para = Api.CreateParagraph();
+          para.AddDrawing(shape);
+          header.Push(para);
+          console.log("Added", childRecipe.type, "to", hType, "header");
+        }
+      }
+
+      console.log(
+        "Applied header for type:",
+        hType,
+        "with",
+        children.length,
+        "children",
+      );
+    }
+  }
+
   function setPageFromRecipe(doc, pageRecipe) {
     if (!pageRecipe) return;
 
@@ -429,6 +563,15 @@ const { Children } = require("react");
       console.log("Per-side margin setters applied on section (if available)");
     } catch (e) {
       console.log("Failed to apply margins", e);
+    }
+
+    // Apply headers if provided
+    if (pageRecipe.headers) {
+      try {
+        setHeadersFromRecipe(doc, section, pageRecipe.headers);
+      } catch (e) {
+        console.log("Failed to apply headers", e);
+      }
     }
   }
 
