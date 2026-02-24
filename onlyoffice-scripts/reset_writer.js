@@ -2,14 +2,17 @@
 // Matches styles by name and updates their text properties accordingly.
 
 (function () {
+  const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
+  const CM_TO_PT = 72 / 2.54; // ≈ 28.346456692913385 (or MM_TO_PT * 10)
+
   var doc = Api.GetDocument();
 
   const INPUT = {
     page: {
-      paddingTop: "4.85cm",
-      paddingBottom: "2.45cm",
-      paddingLeft: "4.85cm",
-      paddingRight: "1cm",
+      paddingTop: "48.5mm",
+      paddingBottom: "24.5mm",
+      paddingLeft: "48.5mm",
+      paddingRight: "10mm",
     },
     styles: [
       {
@@ -17,11 +20,11 @@
         name: "Normal",
         type: "paragraph",
         fontFamily: "Merriweather",
-        fontSize: 9,
+        fontSize: "9pt",
         fontWeight: "normal",
         fontStyle: "normal",
         lineHeight: 1.44,
-        paddingBottom: "0.15cm",
+        paddingBottom: "1.5mm",
         basedOnId: "",
       },
       {
@@ -29,13 +32,13 @@
         name: "Heading 1",
         type: "paragraph",
         fontFamily: "Geist",
-        fontSize: 20,
+        fontSize: "20pt",
         fontWeight: "bold",
         fontStyle: "normal",
         lineHeight: 1.1,
-        textIndent: "-3.1cm",
+        textIndent: "-31mm",
         paddingTop: "0cm",
-        paddingBottom: "0.1cm",
+        paddingBottom: "1mm",
         basedOnId: "1077",
       },
       {
@@ -43,12 +46,12 @@
         name: "Heading 2",
         type: "paragraph",
         fontFamily: "Geist",
-        fontSize: 15,
+        fontSize: "15pt",
         fontWeight: "bold",
         fontStyle: "normal",
         lineHeight: 1.1,
-        paddingTop: "0.65cm",
-        paddingBottom: "0.2cm",
+        paddingTop: "6.5mm",
+        paddingBottom: "2mm",
         basedOnId: "1077",
       },
       {
@@ -56,12 +59,12 @@
         name: "Heading 3",
         type: "paragraph",
         fontFamily: "Merriweather",
-        fontSize: 10,
+        fontSize: "10pt",
         fontWeight: "bold",
         fontStyle: "normal",
         lineHeight: 1.33,
-        paddingTop: "0.6cm",
-        paddingBottom: "0.35cm",
+        paddingTop: "6mm",
+        paddingBottom: "3.5mm",
         basedOnId: "1077",
         letterSpacing: "0.02em",
       },
@@ -70,7 +73,7 @@
       //   name: "Heading 4",
       //   type: "paragraph",
       //   fontFamily: "Geist",
-      //   fontSize: 13,
+      //   fontSize: "13pt",
       //   fontWeight: "bold",
       //   fontStyle: "normal",
       //   lineHeight: 1,
@@ -83,7 +86,7 @@
       //   name: "Heading 5",
       //   type: "paragraph",
       //   fontFamily: "Geist",
-      //   fontSize: 10,
+      //   fontSize: "10pt",
       //   fontWeight: "bold",
       //   fontStyle: "normal",
       //   lineHeight: 1,
@@ -96,7 +99,7 @@
       //   name: "Caption",
       //   type: "paragraph",
       //   fontFamily: "Geist",
-      //   fontSize: 9,
+      //   fontSize: "9pt",
       //   fontWeight: "normal",
       //   color: {
       //     r: 0,
@@ -143,8 +146,11 @@
     if (!raw.length) return null;
 
     var factor = 1; // default assume pt
-    if (raw.endsWith("cm")) {
-      factor = 28.3464567; // 1 cm in points
+    if (raw.endsWith("mm")) {
+      factor = MM_TO_PT; // 1 mm in points
+      raw = raw.slice(0, -2);
+    } else if (raw.endsWith("cm")) {
+      factor = CM_TO_PT; // 1 cm in points
       raw = raw.slice(0, -2);
     } else if (raw.endsWith("pt")) {
       raw = raw.slice(0, -2);
@@ -263,7 +269,7 @@
             "Set letterSpacing",
             spacingTwips,
             "twips for style",
-            style.GetName && style.GetName()
+            style.GetName && style.GetName(),
           );
         } catch (e) {
           console.error("Failed to set letterSpacing for style", style, e);
