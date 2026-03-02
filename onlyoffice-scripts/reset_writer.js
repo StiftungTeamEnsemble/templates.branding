@@ -1,7 +1,6 @@
 // Script for OnlyOffice to reset paragraph styles based on an input recipe.
 // Matches styles by name and updates their text properties accordingly.
 
-
 (function () {
   const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
   const CM_TO_PT = 72 / 2.54; // ≈ 28.346456692913385 (or MM_TO_PT * 10)
@@ -20,18 +19,21 @@
           children: [
             {
               type: "line",
-              left: "0mm",
-              top: "0mm",
-              width: "100mm",
+              position: "absolute",
+              left: "17.5mm",
+              top: "16mm",
+              width: "27.5mm",
               borderWidth: "0.5pt",
               borderColor: { r: 0, g: 0, b: 0, a: 255 },
             },
             {
               type: "textbox",
+              position: "absolute",
               left: "0mm",
               top: "0mm",
               width: "100mm",
               height: "20mm",
+              color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
@@ -47,19 +49,21 @@
           children: [
             {
               type: "line",
-              left: "0mm",
-              top: "0mm",
-              width: "100mm",
+              position: "absolute",
+              left: "17.5mm",
+              top: "16mm",
+              width: "27.5mm",
               borderWidth: "0.5pt",
               borderColor: { r: 0, g: 0, b: 0, a: 255 },
             },
             {
               type: "textbox",
+              position: "absolute",
               left: "0mm",
               top: "0mm",
               width: "100mm",
               height: "20mm",
-              color: { r: 255, g: 0, b: 0 },
+              color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
@@ -400,12 +404,31 @@
 
     var strokeWidth = toEmu(recipe.borderWidth || "0.5pt") || 6350;
     var strokeColor = recipe.borderColor || { r: 0, g: 0, b: 0 };
-    console.log("createLineShape: strokeWidth =", strokeWidth, "strokeColor =", JSON.stringify(strokeColor));
+    console.log(
+      "createLineShape: strokeWidth =",
+      strokeWidth,
+      "strokeColor =",
+      JSON.stringify(strokeColor),
+    );
 
-    var rgbColor = Api.CreateRGBColor(strokeColor.r, strokeColor.g, strokeColor.b);
-    console.log("createLineShape: rgbColor =", rgbColor, "type =", typeof rgbColor);
+    var rgbColor = Api.CreateRGBColor(
+      strokeColor.r,
+      strokeColor.g,
+      strokeColor.b,
+    );
+    console.log(
+      "createLineShape: rgbColor =",
+      rgbColor,
+      "type =",
+      typeof rgbColor,
+    );
     var solidFill = Api.CreateSolidFill(rgbColor);
-    console.log("createLineShape: solidFill =", solidFill, "type =", typeof solidFill);
+    console.log(
+      "createLineShape: solidFill =",
+      solidFill,
+      "type =",
+      typeof solidFill,
+    );
     var stroke = Api.CreateStroke(strokeWidth, solidFill);
     console.log("createLineShape: stroke =", stroke, "type =", typeof stroke);
     var fill = Api.CreateNoFill();
@@ -418,12 +441,36 @@
       return null;
     }
 
-    try { shape.SetWrappingStyle("inFront"); } catch (e) { console.error("createLineShape: SetWrappingStyle failed", e); }
+    try {
+      shape.SetWrappingStyle("inFront");
+    } catch (e) {
+      console.error("createLineShape: SetWrappingStyle failed", e);
+    }
     var leftEmu = toEmu(recipe.left) || 0;
     var topEmu = toEmu(recipe.top) || 0;
-    console.log("createLineShape: position leftEmu =", leftEmu, "topEmu =", topEmu);
-    try { shape.SetHorPosition("column", leftEmu); } catch (e) { console.error("createLineShape: SetHorPosition failed", e); }
-    try { shape.SetVerPosition("paragraph", topEmu); } catch (e) { console.error("createLineShape: SetVerPosition failed", e); }
+    var isAbsolute = recipe.position === "absolute";
+    var horRef = isAbsolute ? "page" : "column";
+    var verRef = isAbsolute ? "page" : "paragraph";
+    console.log(
+      "createLineShape: position leftEmu =",
+      leftEmu,
+      "topEmu =",
+      topEmu,
+      "horRef =",
+      horRef,
+      "verRef =",
+      verRef,
+    );
+    try {
+      shape.SetHorPosition(horRef, leftEmu);
+    } catch (e) {
+      console.error("createLineShape: SetHorPosition failed", e);
+    }
+    try {
+      shape.SetVerPosition(verRef, topEmu);
+    } catch (e) {
+      console.error("createLineShape: SetVerPosition failed", e);
+    }
 
     console.log("createLineShape: done");
     return shape;
@@ -433,27 +480,66 @@
     console.log("createTextboxShape: recipe =", JSON.stringify(recipe));
     var widthEmu = toEmu(recipe.width) || 0;
     var heightEmu = toEmu(recipe.height) || 0;
-    console.log("createTextboxShape: widthEmu =", widthEmu, "heightEmu =", heightEmu);
+    console.log(
+      "createTextboxShape: widthEmu =",
+      widthEmu,
+      "heightEmu =",
+      heightEmu,
+    );
 
     var fill = Api.CreateNoFill();
     var stroke = Api.CreateStroke(0, Api.CreateNoFill());
     console.log("createTextboxShape: fill =", fill, "stroke =", stroke);
 
-    var shape = Api.CreateShape("rect", widthEmu, heightEmu, fill, stroke);
+    // var shape = Api.CreateShape("rect", widthEmu, heightEmu, fill, stroke);
+    var shape = Api.CreateShape("rect", widthEmu, heightEmu);
     console.log("createTextboxShape: shape =", shape, "type =", typeof shape);
     if (!shape) {
       console.error("createTextboxShape: Api.CreateShape returned falsy!");
       return null;
     }
 
-    try { shape.SetWrappingStyle("inFront"); } catch (e) { console.error("createTextboxShape: SetWrappingStyle failed", e); }
+    try {
+      shape.SetWrappingStyle("inFront");
+    } catch (e) {
+      console.error("createTextboxShape: SetWrappingStyle failed", e);
+    }
     var leftEmu = toEmu(recipe.left) || 0;
     var topEmu = toEmu(recipe.top) || 0;
-    console.log("createTextboxShape: position leftEmu =", leftEmu, "topEmu =", topEmu);
-    try { shape.SetHorPosition("column", leftEmu); } catch (e) { console.error("createTextboxShape: SetHorPosition failed", e); }
-    try { shape.SetVerPosition("paragraph", topEmu); } catch (e) { console.error("createTextboxShape: SetVerPosition failed", e); }
+    var isAbsolute = recipe.position === "absolute";
+    var horRef = isAbsolute ? "page" : "column";
+    var verRef = isAbsolute ? "page" : "paragraph";
+    console.log(
+      "createTextboxShape: position leftEmu =",
+      leftEmu,
+      "topEmu =",
+      topEmu,
+      "horRef =",
+      horRef,
+      "verRef =",
+      verRef,
+    );
+    try {
+      shape.SetHorPosition(horRef, leftEmu);
+    } catch (e) {
+      console.error("createTextboxShape: SetHorPosition failed", e);
+    }
+    try {
+      shape.SetVerPosition(verRef, topEmu);
+    } catch (e) {
+      console.error("createTextboxShape: SetVerPosition failed", e);
+    }
 
-    console.log("createTextboxShape: done (content will be populated after adding to document)");
+    // Set 0 internal padding (text inset) on the textbox
+    try {
+      shape.SetPaddings(0, 0, 0, 0);
+    } catch (e) {
+      console.error("createTextboxShape: SetPaddings failed", e);
+    }
+
+    console.log(
+      "createTextboxShape: done (content will be populated after adding to document)",
+    );
     return shape;
   }
 
@@ -462,19 +548,28 @@
     if (!recipe.children || !recipe.children.length) return;
 
     var docContent = shape.GetDocContent();
-    console.log("populateTextboxContent: docContent =", docContent, "type =", typeof docContent);
+    console.log(
+      "populateTextboxContent: docContent =",
+      docContent,
+      "type =",
+      typeof docContent,
+    );
     if (!docContent) {
       console.error("populateTextboxContent: GetDocContent() returned falsy");
       return;
     }
 
     // Remove default empty paragraph(s)
-    var elCount = docContent.GetElementsCount ? docContent.GetElementsCount() : 0;
+    var elCount = docContent.GetElementsCount
+      ? docContent.GetElementsCount()
+      : 0;
     console.log("populateTextboxContent: existing elements =", elCount);
     for (var i = elCount - 1; i >= 0; i--) {
       try {
         docContent.RemoveElement(i);
-      } catch (e) { console.error("populateTextboxContent: RemoveElement failed at", i, e); }
+      } catch (e) {
+        console.error("populateTextboxContent: RemoveElement failed at", i, e);
+      }
     }
 
     for (var c = 0; c < recipe.children.length; c++) {
@@ -490,33 +585,58 @@
               para.SetStyle(style);
               console.log("populateTextboxContent: set style", child.className);
             } else {
-              console.error("populateTextboxContent: style not found:", child.className);
+              console.error(
+                "populateTextboxContent: style not found:",
+                child.className,
+              );
             }
           } catch (e) {
-            console.error("populateTextboxContent: SetStyle failed for", child.className, e);
+            console.error(
+              "populateTextboxContent: SetStyle failed for",
+              child.className,
+              e,
+            );
           }
         }
 
         if (child.text) {
           para.AddText(child.text);
 
-          let color =  { r: 0, g: 0, b: 0 };
-          para.SetColor(color.r, color.g, color.b);
+          // Use color from textbox recipe, child override, or default to black
+          var color = child.color || recipe.color 
+          if (color && typeof color === "object") {
+            para.SetColor(color.r, color.g, color.b);
+          }
         }
         try {
           docContent.Push(para);
-          console.log("populateTextboxContent: pushed paragraph with text:", child.text);
-        } catch (e) { console.error("populateTextboxContent: Push paragraph failed", e); }
+          console.log(
+            "populateTextboxContent: pushed paragraph with text:",
+            child.text,
+          );
+        } catch (e) {
+          console.error("populateTextboxContent: Push paragraph failed", e);
+        }
       }
     }
   }
 
   function setHeadersFromRecipe(doc, section, headersRecipe) {
     console.log("setHeadersFromRecipe: called");
-    console.log("setHeadersFromRecipe: section =", section, "type =", typeof section);
-    console.log("setHeadersFromRecipe: headersRecipe keys =", headersRecipe ? Object.keys(headersRecipe) : "null");
+    console.log(
+      "setHeadersFromRecipe: section =",
+      section,
+      "type =",
+      typeof section,
+    );
+    console.log(
+      "setHeadersFromRecipe: headersRecipe keys =",
+      headersRecipe ? Object.keys(headersRecipe) : "null",
+    );
     if (!headersRecipe || !section) {
-      console.error("setHeadersFromRecipe: bailing — headersRecipe or section is falsy");
+      console.error(
+        "setHeadersFromRecipe: bailing — headersRecipe or section is falsy",
+      );
       return;
     }
 
@@ -525,7 +645,10 @@
     for (var key in section) {
       if (typeof section[key] === "function") sectionMethods.push(key);
     }
-    console.log("setHeadersFromRecipe: section methods =", sectionMethods.join(", "));
+    console.log(
+      "setHeadersFromRecipe: section methods =",
+      sectionMethods.join(", "),
+    );
 
     var headerTypes = ["default", "first"];
 
@@ -553,20 +676,34 @@
             console.error("setHeadersFromRecipe: SetTitlePage failed", e);
           }
         } else {
-          console.log("setHeadersFromRecipe: section has no SetTitlePage method");
+          console.log(
+            "setHeadersFromRecipe: section has no SetTitlePage method",
+          );
         }
       }
 
-      console.log("setHeadersFromRecipe: calling section.GetHeader(", apiHeaderType, ", true)");
+      console.log(
+        "setHeadersFromRecipe: calling section.GetHeader(",
+        apiHeaderType,
+        ", true)",
+      );
       var header = null;
       try {
         header = section.GetHeader(apiHeaderType, true);
       } catch (e) {
         console.error("setHeadersFromRecipe: section.GetHeader threw", e);
       }
-      console.log("setHeadersFromRecipe: header =", header, "type =", typeof header);
+      console.log(
+        "setHeadersFromRecipe: header =",
+        header,
+        "type =",
+        typeof header,
+      );
       if (!header) {
-        console.error("setHeadersFromRecipe: Could not get/create header for type:", hType);
+        console.error(
+          "setHeadersFromRecipe: Could not get/create header for type:",
+          hType,
+        );
         continue;
       }
 
@@ -575,62 +712,115 @@
       for (var hk in header) {
         if (typeof header[hk] === "function") headerMethods.push(hk);
       }
-      console.log("setHeadersFromRecipe: header methods =", headerMethods.join(", "));
+      console.log(
+        "setHeadersFromRecipe: header methods =",
+        headerMethods.join(", "),
+      );
 
       // Clear existing content if requested
       if (hRecipe.childrenDeleteBeforeCreate) {
         var count = header.GetElementsCount ? header.GetElementsCount() : 0;
-        console.log("setHeadersFromRecipe: clearing", count, "existing elements from", hType, "header");
+        console.log(
+          "setHeadersFromRecipe: clearing",
+          count,
+          "existing elements from",
+          hType,
+          "header",
+        );
         for (var r = count - 1; r >= 0; r--) {
           try {
             header.RemoveElement(r);
           } catch (e) {
-            console.error("setHeadersFromRecipe: RemoveElement(", r, ") failed", e);
+            console.error(
+              "setHeadersFromRecipe: RemoveElement(",
+              r,
+              ") failed",
+              e,
+            );
           }
         }
       }
 
       // Create children (line / textbox)
       var children = hRecipe.children || [];
-      console.log("setHeadersFromRecipe: creating", children.length, "children for", hType);
+      console.log(
+        "setHeadersFromRecipe: creating",
+        children.length,
+        "children for",
+        hType,
+      );
       for (var c = 0; c < children.length; c++) {
         var childRecipe = children[c];
-        console.log("setHeadersFromRecipe: child[", c, "] type =", childRecipe.type);
+        console.log(
+          "setHeadersFromRecipe: child[",
+          c,
+          "] type =",
+          childRecipe.type,
+        );
         var shape = null;
 
         try {
           if (childRecipe.type === "line") {
             shape = createLineShape(childRecipe);
           } else if (childRecipe.type === "textbox") {
-            shape = createTextboxShape(childRecipe); 
+            shape = createTextboxShape(childRecipe);
           } else {
-            console.log("setHeadersFromRecipe: unknown child type:", childRecipe.type);
+            console.log(
+              "setHeadersFromRecipe: unknown child type:",
+              childRecipe.type,
+            );
           }
         } catch (e) {
-          console.error("setHeadersFromRecipe: shape creation failed for child[", c, "]", e);
+          console.error(
+            "setHeadersFromRecipe: shape creation failed for child[",
+            c,
+            "]",
+            e,
+          );
         }
 
-        console.log("setHeadersFromRecipe: shape =", shape, "type =", typeof shape);
+        console.log(
+          "setHeadersFromRecipe: shape =",
+          shape,
+          "type =",
+          typeof shape,
+        );
         if (shape) {
           try {
             var para = Api.CreateParagraph();
             para.AddDrawing(shape);
             header.Push(para);
-            console.log("setHeadersFromRecipe: Added", childRecipe.type, "to", hType, "header");
+            console.log(
+              "setHeadersFromRecipe: Added",
+              childRecipe.type,
+              "to",
+              hType,
+              "header",
+            );
 
             // Populate textbox content AFTER it's been added to the document
             if (childRecipe.type === "textbox" && childRecipe.children) {
               try {
                 populateTextboxContent(doc, shape, childRecipe);
               } catch (e) {
-                console.error("setHeadersFromRecipe: populateTextboxContent failed", e);
+                console.error(
+                  "setHeadersFromRecipe: populateTextboxContent failed",
+                  e,
+                );
               }
             }
           } catch (e) {
-            console.error("setHeadersFromRecipe: failed to add shape to header", e);
+            console.error(
+              "setHeadersFromRecipe: failed to add shape to header",
+              e,
+            );
           }
         } else {
-          console.error("setHeadersFromRecipe: shape is falsy for child[", c, "], skipping");
+          console.error(
+            "setHeadersFromRecipe: shape is falsy for child[",
+            c,
+            "], skipping",
+          );
         }
       }
 
@@ -688,14 +878,19 @@
         if (section.SetMarginBottom) section.SetMarginBottom(bottom || 0);
         if (section.SetMarginLeft) section.SetMarginLeft(left || 0);
         if (section.SetMarginRight) section.SetMarginRight(right || 0);
-        console.log("Per-side margin setters applied on section (if available)");
+        console.log(
+          "Per-side margin setters applied on section (if available)",
+        );
       }
     } catch (e) {
       console.error("Failed to apply margins", e);
     }
 
     // Apply headers if provided
-    console.log("setPageFromRecipe: headers recipe present =", !!pageRecipe.headers);
+    console.log(
+      "setPageFromRecipe: headers recipe present =",
+      !!pageRecipe.headers,
+    );
     if (pageRecipe.headers) {
       try {
         setHeadersFromRecipe(doc, section, pageRecipe.headers);
