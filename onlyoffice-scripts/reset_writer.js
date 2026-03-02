@@ -29,8 +29,8 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "0mm",
-              top: "0mm",
+              left: "17.5mm",
+              top: "18.5mm",
               width: "100mm",
               height: "20mm",
               color: { r: 0, g: 0, b: 0 },
@@ -59,8 +59,8 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "0mm",
-              top: "0mm",
+              left: "17.5mm",
+              top: "18.5mm",
               width: "100mm",
               height: "20mm",
               color: { r: 0, g: 0, b: 0 },
@@ -537,6 +537,13 @@
       console.error("createTextboxShape: SetPaddings failed", e);
     }
 
+    // Default vertical text alignment to top
+    try {
+      shape.SetVerticalTextAlign("top");
+    } catch (e) {
+      console.error("createTextboxShape: SetVerticalTextAlign failed", e);
+    }
+
     console.log(
       "createTextboxShape: done (content will be populated after adding to document)",
     );
@@ -559,12 +566,18 @@
       return;
     }
 
-    // Remove default empty paragraph(s)
+    // OnlyOffice always keeps at least one paragraph in a content area;
+    // RemoveElement cannot delete the last element.  We push clean new
+    // paragraphs first, then remove the original default paragraph so no
+    // stale formatting leaks through.
+
     var elCount = docContent.GetElementsCount
       ? docContent.GetElementsCount()
       : 0;
     console.log("populateTextboxContent: existing elements =", elCount);
-    for (var i = elCount - 1; i >= 0; i--) {
+
+    // Remove all existing elements except the very first (can't be removed yet)
+    for (var i = elCount - 1; i >= 1; i--) {
       try {
         docContent.RemoveElement(i);
       } catch (e) {
@@ -572,52 +585,66 @@
       }
     }
 
+    // Push all new paragraphs (created fresh, so they carry no old formatting)
     for (var c = 0; c < recipe.children.length; c++) {
       var child = recipe.children[c];
-      if (child.type === "paragraph") {
-        var para = Api.CreateParagraph();
+      if (child.type !== "paragraph") continue;
 
-        // Apply paragraph style by className (style name in the document)
-        if (child.className) {
-          try {
-            var style = doc.GetStyle(child.className);
-            if (style) {
-              para.SetStyle(style);
-              console.log("populateTextboxContent: set style", child.className);
-            } else {
-              console.error(
-                "populateTextboxContent: style not found:",
-                child.className,
-              );
-            }
-          } catch (e) {
+      var para = Api.CreateParagraph();
+
+      // Apply paragraph style by className (style name in the document)
+      if (child.className) {
+        try {
+          var style = doc.GetStyle(child.className);
+          if (style) {
+            para.SetStyle(style);
+            console.log("populateTextboxContent: set style", child.className);
+          } else {
             console.error(
-              "populateTextboxContent: SetStyle failed for",
+              "populateTextboxContent: style not found:",
               child.className,
-              e,
             );
           }
-        }
-
-        if (child.text) {
-          para.AddText(child.text);
-
-          // Use color from textbox recipe, child override, or default to black
-          var color = child.color || recipe.color 
-          if (color && typeof color === "object") {
-            para.SetColor(color.r, color.g, color.b);
-          }
-        }
-        try {
-          docContent.Push(para);
-          console.log(
-            "populateTextboxContent: pushed paragraph with text:",
-            child.text,
-          );
         } catch (e) {
-          console.error("populateTextboxContent: Push paragraph failed", e);
+          console.error(
+            "populateTextboxContent: SetStyle failed for",
+            child.className,
+            e,
+          );
         }
       }
+
+      if (child.text) {
+        para.AddText(child.text);
+
+        // Use color from textbox recipe, child override, or default to black
+        var color = child.color || recipe.color;
+        if (color && typeof color === "object") {
+          para.SetColor(color.r, color.g, color.b);
+        }
+      }
+
+      try {
+        docContent.Push(para);
+        console.log(
+          "populateTextboxContent: pushed paragraph with text:",
+          child.text,
+        );
+      } catch (e) {
+        console.error("populateTextboxContent: Push paragraph failed", e);
+      }
+    }
+
+    // Now remove the original default paragraph (index 0) — this is safe
+    // because we just pushed at least one new paragraph above.
+    try {
+      docContent.RemoveElement(0);
+      console.log("populateTextboxContent: removed original default paragraph");
+    } catch (e) {
+      console.error(
+        "populateTextboxContent: failed to remove original paragraph",
+        e,
+      );
     }
   }
 
