@@ -71,7 +71,8 @@
                 {
                   type: "paragraph",
                   text: "Januar 202x",
-                  className: "Normal",
+                  fontFamily: "Liberation Mono",
+                  fontSize: "9pt",
                 },
               ],
             },
@@ -100,13 +101,15 @@
               height: "8mm",
               color: { r: 0, g: 0, b: 0 },
               padding: 0,
+              alignItems: "center",
               children: [
                 {
                   type: "paragraph",
                   text: "Stiftung Team Ensemble · team-ensemble.ch",
                   fontFamily: "Geist",
                   fontSize: "8pt",
-        lineHeight: 1,
+                  lineHeight: 1,
+                  paddingBottom: 0,
                 },
               ],
             },
@@ -573,13 +576,29 @@
     // `paddingTop`, `paddingRight`, `paddingBottom`, `paddingLeft` set individual sides.
     // Per-side values take precedence over the shorthand. Default is 0 on all sides.
     var padShorthand = recipe.padding != null ? toEmu(recipe.padding) || 0 : 0;
-    var padTop    = recipe.paddingTop    != null ? toEmu(recipe.paddingTop)    || 0 : padShorthand;
-    var padRight  = recipe.paddingRight  != null ? toEmu(recipe.paddingRight)  || 0 : padShorthand;
-    var padBottom = recipe.paddingBottom != null ? toEmu(recipe.paddingBottom) || 0 : padShorthand;
-    var padLeft   = recipe.paddingLeft   != null ? toEmu(recipe.paddingLeft)   || 0 : padShorthand;
+    var padTop =
+      recipe.paddingTop != null ? toEmu(recipe.paddingTop) || 0 : padShorthand;
+    var padRight =
+      recipe.paddingRight != null
+        ? toEmu(recipe.paddingRight) || 0
+        : padShorthand;
+    var padBottom =
+      recipe.paddingBottom != null
+        ? toEmu(recipe.paddingBottom) || 0
+        : padShorthand;
+    var padLeft =
+      recipe.paddingLeft != null
+        ? toEmu(recipe.paddingLeft) || 0
+        : padShorthand;
     try {
       shape.SetPaddings(padLeft, padTop, padRight, padBottom);
-      console.log("createTextboxShape: SetPaddings", padLeft, padTop, padRight, padBottom);
+      console.log(
+        "createTextboxShape: SetPaddings",
+        padLeft,
+        padTop,
+        padRight,
+        padBottom,
+      );
     } catch (e) {
       console.error("createTextboxShape: SetPaddings failed", e);
     }
@@ -816,64 +835,96 @@
       }
 
       // Inline paragraph spacing — child values override textbox recipe defaults
-      var inlineLineHeight = child.lineHeight != null ? child.lineHeight : recipe.lineHeight;
+      var inlineLineHeight =
+        child.lineHeight != null ? child.lineHeight : recipe.lineHeight;
       if (inlineLineHeight != null) {
         var ls = toLineSpacing(inlineLineHeight);
         if (ls && ls.value != null) {
           try {
-            para.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
+            para.SetSpacingLine(
+              ls.value,
+              ls.mode === "exact" ? "exact" : "auto",
+            );
           } catch (e) {
             console.error("populateTextboxContent: SetSpacingLine failed", e);
           }
         }
       }
-      var inlineParaPaddingTop = child.paddingTop != null ? child.paddingTop : recipe.paragraphPaddingTop;
+      var inlineParaPaddingTop =
+        child.paddingTop != null
+          ? child.paddingTop
+          : recipe.paragraphPaddingTop;
       if (inlineParaPaddingTop != null) {
         var beforeTw = toTwips(inlineParaPaddingTop);
-        if (beforeTw != null) { try { para.SetSpacingBefore(beforeTw); } catch (e) {} }
+        if (beforeTw != null) {
+          try {
+            para.SetSpacingBefore(beforeTw);
+          } catch (e) {}
+        }
       }
-      var inlineParaPaddingBottom = child.paddingBottom != null ? child.paddingBottom : recipe.paragraphPaddingBottom;
+      var inlineParaPaddingBottom =
+        child.paddingBottom != null
+          ? child.paddingBottom
+          : recipe.paragraphPaddingBottom;
       if (inlineParaPaddingBottom != null) {
         var afterTw = toTwips(inlineParaPaddingBottom);
-        if (afterTw != null) { try { para.SetSpacingAfter(afterTw); } catch (e) {} }
+        if (afterTw != null) {
+          try {
+            para.SetSpacingAfter(afterTw);
+          } catch (e) {}
+        }
       }
 
       if (child.text) {
         var run = para.AddText(child.text);
 
         // Resolve inline text properties: child values override textbox recipe defaults
-        var inlineFontFamily = child.fontFamily != null ? child.fontFamily : recipe.fontFamily;
-        var inlineFontSize   = child.fontSize   != null ? child.fontSize   : recipe.fontSize;
-        var inlineFontWeight = child.fontWeight != null ? child.fontWeight : recipe.fontWeight;
-        var inlineFontStyle  = child.fontStyle  != null ? child.fontStyle  : recipe.fontStyle;
-        var inlineColor      = child.color      != null ? child.color      : recipe.color;
+        var inlineFontFamily =
+          child.fontFamily != null ? child.fontFamily : recipe.fontFamily;
+        var inlineFontSize =
+          child.fontSize != null ? child.fontSize : recipe.fontSize;
+        var inlineFontWeight =
+          child.fontWeight != null ? child.fontWeight : recipe.fontWeight;
+        var inlineFontStyle =
+          child.fontStyle != null ? child.fontStyle : recipe.fontStyle;
+        var inlineColor = child.color != null ? child.color : recipe.color;
 
         if (run) {
           if (inlineFontFamily) {
-            try { run.SetFontFamily(inlineFontFamily); } catch (e) {
+            try {
+              run.SetFontFamily(inlineFontFamily);
+            } catch (e) {
               console.error("populateTextboxContent: SetFontFamily failed", e);
             }
           }
           if (inlineFontSize != null) {
             var szHps = toHalfPoints(inlineFontSize);
             if (szHps != null) {
-              try { run.SetFontSize(szHps); } catch (e) {
+              try {
+                run.SetFontSize(szHps);
+              } catch (e) {
                 console.error("populateTextboxContent: SetFontSize failed", e);
               }
             }
           }
           if (inlineFontWeight === "bold" || inlineFontWeight === "normal") {
-            try { run.SetBold(inlineFontWeight === "bold"); } catch (e) {
+            try {
+              run.SetBold(inlineFontWeight === "bold");
+            } catch (e) {
               console.error("populateTextboxContent: SetBold failed", e);
             }
           }
           if (inlineFontStyle === "italic" || inlineFontStyle === "normal") {
-            try { run.SetItalic(inlineFontStyle === "italic"); } catch (e) {
+            try {
+              run.SetItalic(inlineFontStyle === "italic");
+            } catch (e) {
               console.error("populateTextboxContent: SetItalic failed", e);
             }
           }
           if (inlineColor && typeof inlineColor === "object") {
-            try { run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b); } catch (e) {
+            try {
+              run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
+            } catch (e) {
               console.error("populateTextboxContent: run.SetColor failed", e);
             }
           }
@@ -1370,6 +1421,34 @@
       }
     } catch (e) {
       console.error("Failed to apply margins", e);
+    }
+
+    // If first-page differentiation is active on either side, ensure both headers
+    // and footers have a "first" entry — falling back to their own "default" if missing.
+    var headersHaveFirst = !!(pageRecipe.headers && pageRecipe.headers.first);
+    var footersHaveFirst = !!(pageRecipe.footers && pageRecipe.footers.first);
+    var firstPageActive = headersHaveFirst || footersHaveFirst;
+    if (firstPageActive) {
+      if (
+        pageRecipe.headers &&
+        !pageRecipe.headers.first &&
+        pageRecipe.headers.default
+      ) {
+        console.log(
+          "setPageFromRecipe: filling headers.first from headers.default",
+        );
+        pageRecipe.headers.first = pageRecipe.headers.default;
+      }
+      if (
+        pageRecipe.footers &&
+        !pageRecipe.footers.first &&
+        pageRecipe.footers.default
+      ) {
+        console.log(
+          "setPageFromRecipe: filling footers.first from footers.default",
+        );
+        pageRecipe.footers.first = pageRecipe.footers.default;
+      }
     }
 
     // Apply headers if provided
