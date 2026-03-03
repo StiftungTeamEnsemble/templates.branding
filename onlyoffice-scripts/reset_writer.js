@@ -99,44 +99,14 @@
               width: "168.75mm",
               height: "8mm",
               color: { r: 0, g: 0, b: 0 },
+              padding: 0,
               children: [
                 {
                   type: "paragraph",
                   text: "Stiftung Team Ensemble · team-ensemble.ch",
                   fontFamily: "Geist",
                   fontSize: "8pt",
-                },
-              ],
-            },
-          ],
-        },
-        first: {
-          childrenDeleteBeforeCreate: true,
-          children: [
-            {
-              type: "image",
-              position: "absolute",
-              left: "17.5mm",
-              top: "281mm",
-              height: "8mm",
-              width: "auto",
-              src: logo,
-            },
-            {
-              type: "textbox",
-              position: "absolute",
-              left: "31.25mm",
-              top: "281mm",
-              width: "168.75mm",
-              height: "8mm",
-              alignItems: "center",
-              color: { r: 0, g: 0, b: 0 },
-              children: [
-                {
-                  type: "paragraph",
-                  text: "Stiftung Team Ensemble · team-ensemble.ch",
-                  fontFamily: "Geist",
-                  fontSize: "8pt",
+        lineHeight: 1,
                 },
               ],
             },
@@ -598,9 +568,18 @@
       console.error("createTextboxShape: SetVerPosition failed", e);
     }
 
-    // Set 0 internal padding (text inset) on the textbox
+    // Textbox inner padding — supports CSS shorthand or per-side values.
+    // `padding: "2mm"` sets all four sides.
+    // `paddingTop`, `paddingRight`, `paddingBottom`, `paddingLeft` set individual sides.
+    // Per-side values take precedence over the shorthand. Default is 0 on all sides.
+    var padShorthand = recipe.padding != null ? toEmu(recipe.padding) || 0 : 0;
+    var padTop    = recipe.paddingTop    != null ? toEmu(recipe.paddingTop)    || 0 : padShorthand;
+    var padRight  = recipe.paddingRight  != null ? toEmu(recipe.paddingRight)  || 0 : padShorthand;
+    var padBottom = recipe.paddingBottom != null ? toEmu(recipe.paddingBottom) || 0 : padShorthand;
+    var padLeft   = recipe.paddingLeft   != null ? toEmu(recipe.paddingLeft)   || 0 : padShorthand;
     try {
-      shape.SetPaddings(0, 0, 0, 0);
+      shape.SetPaddings(padLeft, padTop, padRight, padBottom);
+      console.log("createTextboxShape: SetPaddings", padLeft, padTop, padRight, padBottom);
     } catch (e) {
       console.error("createTextboxShape: SetPaddings failed", e);
     }
@@ -618,12 +597,6 @@
       (recipe.alignItems && alignItemsMap[recipe.alignItems]) || "top";
     try {
       shape.SetVerticalTextAlign(vertAlign);
-      console.log(
-        "createTextboxShape: SetVerticalTextAlign to",
-        vertAlign,
-        "for alignItems =",
-        recipe.alignItems,
-      );
     } catch (e) {
       console.error("createTextboxShape: SetVerticalTextAlign failed", e);
     }
@@ -842,13 +815,73 @@
         }
       }
 
-      if (child.text) {
-        para.AddText(child.text);
+      // Inline paragraph spacing — child values override textbox recipe defaults
+      var inlineLineHeight = child.lineHeight != null ? child.lineHeight : recipe.lineHeight;
+      if (inlineLineHeight != null) {
+        var ls = toLineSpacing(inlineLineHeight);
+        if (ls && ls.value != null) {
+          try {
+            para.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
+          } catch (e) {
+            console.error("populateTextboxContent: SetSpacingLine failed", e);
+          }
+        }
+      }
+      var inlineParaPaddingTop = child.paddingTop != null ? child.paddingTop : recipe.paragraphPaddingTop;
+      if (inlineParaPaddingTop != null) {
+        var beforeTw = toTwips(inlineParaPaddingTop);
+        if (beforeTw != null) { try { para.SetSpacingBefore(beforeTw); } catch (e) {} }
+      }
+      var inlineParaPaddingBottom = child.paddingBottom != null ? child.paddingBottom : recipe.paragraphPaddingBottom;
+      if (inlineParaPaddingBottom != null) {
+        var afterTw = toTwips(inlineParaPaddingBottom);
+        if (afterTw != null) { try { para.SetSpacingAfter(afterTw); } catch (e) {} }
+      }
 
-        // Use color from textbox recipe, child override, or default to black
-        var color = child.color || recipe.color;
-        if (color && typeof color === "object") {
-          para.SetColor(color.r, color.g, color.b);
+      if (child.text) {
+        var run = para.AddText(child.text);
+
+        // Resolve inline text properties: child values override textbox recipe defaults
+        var inlineFontFamily = child.fontFamily != null ? child.fontFamily : recipe.fontFamily;
+        var inlineFontSize   = child.fontSize   != null ? child.fontSize   : recipe.fontSize;
+        var inlineFontWeight = child.fontWeight != null ? child.fontWeight : recipe.fontWeight;
+        var inlineFontStyle  = child.fontStyle  != null ? child.fontStyle  : recipe.fontStyle;
+        var inlineColor      = child.color      != null ? child.color      : recipe.color;
+
+        if (run) {
+          if (inlineFontFamily) {
+            try { run.SetFontFamily(inlineFontFamily); } catch (e) {
+              console.error("populateTextboxContent: SetFontFamily failed", e);
+            }
+          }
+          if (inlineFontSize != null) {
+            var szHps = toHalfPoints(inlineFontSize);
+            if (szHps != null) {
+              try { run.SetFontSize(szHps); } catch (e) {
+                console.error("populateTextboxContent: SetFontSize failed", e);
+              }
+            }
+          }
+          if (inlineFontWeight === "bold" || inlineFontWeight === "normal") {
+            try { run.SetBold(inlineFontWeight === "bold"); } catch (e) {
+              console.error("populateTextboxContent: SetBold failed", e);
+            }
+          }
+          if (inlineFontStyle === "italic" || inlineFontStyle === "normal") {
+            try { run.SetItalic(inlineFontStyle === "italic"); } catch (e) {
+              console.error("populateTextboxContent: SetItalic failed", e);
+            }
+          }
+          if (inlineColor && typeof inlineColor === "object") {
+            try { run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b); } catch (e) {
+              console.error("populateTextboxContent: run.SetColor failed", e);
+            }
+          }
+        } else {
+          // Fallback if AddText doesn't return a run
+          if (inlineColor && typeof inlineColor === "object") {
+            para.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
+          }
         }
       }
 
