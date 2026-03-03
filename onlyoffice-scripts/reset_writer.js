@@ -12,7 +12,7 @@
 
   const INPUT = {
     page: {
-      paddingTop: "26mm",
+      paddingTop: "27.4mm",
       paddingBottom: "24.5mm",
       paddingLeft: "48.5mm",
       paddingRight: "10mm",
@@ -26,14 +26,14 @@
               left: "17.5mm",
               top: "16mm",
               width: "27.5mm",
-              borderWidth: "0.5pt",
+              borderWidth: "1pt",
               borderColor: { r: 0, g: 0, b: 0, a: 255 },
             },
             {
               type: "textbox",
               position: "absolute",
               left: "17.5mm",
-              top: "18.5mm",
+              top: "18.1mm",
               width: "100mm",
               height: "20mm",
               color: { r: 0, g: 0, b: 0 },
@@ -41,7 +41,10 @@
                 {
                   type: "paragraph",
                   text: "Januar 202x",
-                  className: "Normal",
+                  fontFamily: "Liberation Mono",
+                  fontSize: "7pt",
+                  textTransform: "uppercase",
+                  lineHeight: 1,
                 },
               ],
             },
@@ -56,14 +59,14 @@
               left: "17.5mm",
               top: "16mm",
               width: "27.5mm",
-              borderWidth: "0.5pt",
+              borderWidth: "1pt",
               borderColor: { r: 0, g: 0, b: 0, a: 255 },
             },
             {
               type: "textbox",
               position: "absolute",
               left: "17.5mm",
-              top: "18.5mm",
+              top: "18.1mm",
               width: "100mm",
               height: "20mm",
               color: { r: 0, g: 0, b: 0 },
@@ -72,7 +75,9 @@
                   type: "paragraph",
                   text: "Januar 202x",
                   fontFamily: "Liberation Mono",
-                  fontSize: "9pt",
+                  fontSize: "7pt",
+                  textTransform: "uppercase",
+                  lineHeight: 1,
                 },
               ],
             },
@@ -83,6 +88,15 @@
         default: {
           childrenDeleteBeforeCreate: true,
           children: [
+            {
+              type: "line",
+              position: "absolute",
+              left: "17.5mm",
+              top: "277.5mm",
+              width: "182.5mm",
+              borderWidth: "1pt",
+              borderColor: { r: 0, g: 0, b: 0, a: 255 },
+            },
             {
               type: "image",
               position: "absolute",
@@ -126,7 +140,7 @@
         fontSize: "9pt",
         fontWeight: "normal",
         fontStyle: "normal",
-        lineHeight: 1.44,
+        lineHeight: 1.15,
         paddingBottom: "1.5mm",
         basedOnId: "",
       },
@@ -138,10 +152,10 @@
         fontSize: "20pt",
         fontWeight: "bold",
         fontStyle: "normal",
-        lineHeight: 1.1,
+        lineHeight: 0.925,
         textIndent: "-31mm",
         paddingTop: "0cm",
-        paddingBottom: "1mm",
+        paddingBottom: "16.4mm",
         basedOnId: "1077",
       },
       {
@@ -170,6 +184,12 @@
         paddingBottom: "3.5mm",
         basedOnId: "1077",
         letterSpacing: "0.02em",
+      },
+      {
+        styleId: "1062",
+        name: "List paragraph",
+        type: "paragraph",
+        paddingBottom: "1.5mm",
       },
       // {
       //   styleId: "905",
@@ -349,6 +369,15 @@
         console.log("Set color for style", style.GetName(), recipe.color);
       } catch (e) {
         console.error("Failed to set color for style", style, e);
+      }
+    }
+
+    // text-transform: CSS casing — "uppercase" → AllCaps, "none"/"normal" → off
+    if (recipe.textTransform != null && recipe.textTransform !== "") {
+      try {
+        tp.SetAllCaps(recipe.textTransform === "uppercase");
+      } catch (e) {
+        console.error("Failed to set textTransform for style", style, e);
       }
     }
 
@@ -888,6 +917,10 @@
         var inlineFontStyle =
           child.fontStyle != null ? child.fontStyle : recipe.fontStyle;
         var inlineColor = child.color != null ? child.color : recipe.color;
+        var inlineTextTransform =
+          child.textTransform != null
+            ? child.textTransform
+            : recipe.textTransform;
 
         if (run) {
           if (inlineFontFamily) {
@@ -926,6 +959,13 @@
               run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
             } catch (e) {
               console.error("populateTextboxContent: run.SetColor failed", e);
+            }
+          }
+          if (inlineTextTransform != null) {
+            try {
+              run.SetAllCaps(inlineTextTransform === "uppercase");
+            } catch (e) {
+              console.error("populateTextboxContent: SetAllCaps failed", e);
             }
           }
         } else {
