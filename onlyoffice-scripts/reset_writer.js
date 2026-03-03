@@ -103,7 +103,8 @@
                 {
                   type: "paragraph",
                   text: "Stiftung Team Ensemble · team-ensemble.ch",
-                  className: "Normal",
+                  fontFamily: "Geist",
+                  fontSize: "8pt",
                 },
               ],
             },
@@ -128,12 +129,14 @@
               top: "281mm",
               width: "168.75mm",
               height: "8mm",
+              alignItems: "center",
               color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
                   text: "Stiftung Team Ensemble · team-ensemble.ch",
-                  className: "Normal",
+                  fontFamily: "Geist",
+                  fontSize: "8pt",
                 },
               ],
             },
@@ -602,9 +605,25 @@
       console.error("createTextboxShape: SetPaddings failed", e);
     }
 
-    // Default vertical text alignment to top
+    // Vertical text alignment via CSS align-items terms
+    // flex-start → top, center → center, flex-end → bottom
+    var alignItemsMap = {
+      "flex-start": "top",
+      start: "top",
+      center: "center",
+      "flex-end": "bottom",
+      end: "bottom",
+    };
+    var vertAlign =
+      (recipe.alignItems && alignItemsMap[recipe.alignItems]) || "top";
     try {
-      shape.SetVerticalTextAlign("top");
+      shape.SetVerticalTextAlign(vertAlign);
+      console.log(
+        "createTextboxShape: SetVerticalTextAlign to",
+        vertAlign,
+        "for alignItems =",
+        recipe.alignItems,
+      );
     } catch (e) {
       console.error("createTextboxShape: SetVerticalTextAlign failed", e);
     }
