@@ -37,8 +37,8 @@
               children: [
                 {
                   type: "paragraph",
-                  text: "Page 1 Header",
-                  className: "Heading 1",
+                  text: "Januar 202x",
+                  className: "Normal",
                 },
               ],
             },
@@ -67,7 +67,7 @@
               children: [
                 {
                   type: "paragraph",
-                  text: "Other Page Header",
+                  text: "Januar 202x",
                   className: "Normal",
                 },
               ],
