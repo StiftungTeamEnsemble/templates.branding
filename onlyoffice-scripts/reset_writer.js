@@ -187,7 +187,7 @@
       },
       {
         styleId: "1062",
-        name: "List paragraph",
+        name: "List Paragraph",
         type: "paragraph",
         paddingBottom: "1.5mm",
       },
@@ -375,7 +375,7 @@
     // text-transform: CSS casing — "uppercase" → AllCaps, "none"/"normal" → off
     if (recipe.textTransform != null && recipe.textTransform !== "") {
       try {
-        tp.SetAllCaps(recipe.textTransform === "uppercase");
+        tp.SetCaps(recipe.textTransform === "uppercase");
       } catch (e) {
         console.error("Failed to set textTransform for style", style, e);
       }
@@ -418,19 +418,41 @@
   }
 
   function setParaPrFromRecipe(style, recipe) {
+    var styleName = style && style.GetName ? style.GetName() : "<unknown>";
+    console.log("setParaPrFromRecipe: entering for", styleName);
+
+    var hasParagraphPr = !!(style.GetParagraphPr);
+    var hasParaPr = !!(style.GetParaPr);
+    console.log(
+      "setParaPrFromRecipe:",
+      styleName,
+      "has GetParagraphPr:",
+      hasParagraphPr,
+      "has GetParaPr:",
+      hasParaPr
+    );
+
     var pp =
       (style.GetParagraphPr && style.GetParagraphPr()) ||
       (style.GetParaPr && style.GetParaPr());
-    if (!pp) return;
 
-    var styleName = style && style.GetName ? style.GetName() : "<unknown>";
+    if (!pp) {
+      console.warn(
+        "setParaPrFromRecipe: no paragraph properties object (pp) for style",
+        styleName,
+        "— skipping para spacing"
+      );
+      return;
+    }
 
     var ls = toLineSpacing(recipe.lineHeight);
     if (ls && ls.value != null) {
       try {
         pp.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
         console.log("Applied lineHeight", ls, "for", styleName);
-      } catch (e) {}
+      } catch (e) {
+        console.error("setParaPrFromRecipe: SetSpacingLine failed for", styleName, e);
+      }
     }
 
     if (recipe.paddingTop != null && recipe.paddingTop !== "") {
@@ -439,17 +461,29 @@
         try {
           pp.SetSpacingBefore(before);
           console.log("Applied paddingTop", before, "twips for", styleName);
-        } catch (e) {}
+        } catch (e) {
+          console.error("setParaPrFromRecipe: SetSpacingBefore failed for", styleName, e);
+        }
       }
     }
 
     if (recipe.paddingBottom != null && recipe.paddingBottom !== "") {
       var after = toTwips(recipe.paddingBottom);
+      console.log(
+        "setParaPrFromRecipe: toTwips(",
+        recipe.paddingBottom,
+        ") =>",
+        after,
+        "for",
+        styleName
+      );
       if (after != null) {
         try {
           pp.SetSpacingAfter(after);
           console.log("Applied paddingBottom", after, "twips for", styleName);
-        } catch (e) {}
+        } catch (e) {
+          console.error("setParaPrFromRecipe: SetSpacingAfter failed for", styleName, e);
+        }
       }
     }
 
@@ -963,9 +997,9 @@
           }
           if (inlineTextTransform != null) {
             try {
-              run.SetAllCaps(inlineTextTransform === "uppercase");
+              run.SetCaps(inlineTextTransform === "uppercase");
             } catch (e) {
-              console.error("populateTextboxContent: SetAllCaps failed", e);
+              console.error("populateTextboxContent: SetCaps failed", e);
             }
           }
         } else {
@@ -1529,15 +1563,19 @@
     if (t !== "paragraph") continue; // only paragraph styles per your pipeline
 
     var name = st && st.GetName ? st.GetName() : "";
-    if (!name || !(name in byName)) continue;
+    if (!name || !(name in byName)) {
+      if (name) console.log("Main loop: style not in recipe, skipping:", JSON.stringify(name));
+      continue;
+    }
 
     seen++;
+    console.log("Main loop: processing style", JSON.stringify(name), "type:", t);
     try {
       setTextPrFromRecipe(st, byName[name]);
       setParaPrFromRecipe(st, byName[name]);
       updated++;
     } catch (e) {
-      // swallow; continue with the next style
+      console.error("Main loop: error processing style", JSON.stringify(name), e);
     }
   }
 
