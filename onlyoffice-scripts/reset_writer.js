@@ -88,6 +88,7 @@
               left: "17.5mm",
               top: "281 mm",
               height: "8mm",
+              width: "auto",
               src: logo,
             },
           ],
@@ -101,6 +102,7 @@
               left: "17.5mm",
               top: "281 mm",
               height: "8mm",
+              width: "auto",
               src: logo,
             },
           ],
@@ -581,10 +583,85 @@
     return shape;
   }
 
+  function getImageNaturalDimensionsFromDataURL(dataURL) {
+    // Parse PNG natural dims from an inline base64 data URL (no XHR).
+    // data:image/png;base64,<b64>
+    try {
+      var marker = ";base64,";
+      var idx = dataURL.indexOf(marker);
+      if (idx === -1) return null;
+      // 24 bytes → 32 base64 chars (padded to multiple of 4)
+      var b64slice = dataURL.substring(idx + marker.length, idx + marker.length + 32);
+      var bin = atob(b64slice);
+      function b(i) {
+        return bin.charCodeAt(i) & 0xff;
+      }
+      // PNG signature check: bytes 1-3 = 'PNG'
+      if (b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) {
+        var w = ((b(16) << 24) | (b(17) << 16) | (b(18) << 8) | b(19)) >>> 0;
+        var h = ((b(20) << 24) | (b(21) << 16) | (b(22) << 8) | b(23)) >>> 0;
+        if (w > 0 && h > 0) return { width: w, height: h };
+      }
+    } catch (e) {
+      console.log("getImageNaturalDimensionsFromDataURL: failed", e);
+    }
+    return null;
+  }
+
   function createImageShape(recipe) {
-    console.log("createImageShape: recipe =", JSON.stringify(recipe));
-    var widthEmu = toEmu(recipe.width) || 0;
-    var heightEmu = toEmu(recipe.height) || 0;
+    console.log("createImageShape: recipe (src omitted) =", JSON.stringify({ ...recipe, src: recipe.src ? recipe.src.substring(0, 40) + "…" : "" }));
+
+    // src must be an inline base64 data URL (e.g. "data:image/png;base64,...")
+    var dataURL = recipe.src || "";
+    var natW = null,
+      natH = null;
+
+    var dims = getImageNaturalDimensionsFromDataURL(dataURL);
+    if (dims) {
+      natW = dims.width;
+      natH = dims.height;
+    }
+
+    var widthIsAuto = recipe.width === "auto";
+    var heightIsAuto = recipe.height === "auto";
+    var widthEmu = widthIsAuto ? null : toEmu(recipe.width) || 0;
+    var heightEmu = heightIsAuto ? null : toEmu(recipe.height) || 0;
+
+    // Proportional scaling when either dimension is "auto"
+    if (widthIsAuto || heightIsAuto) {
+      if (natW && natH && natW > 0 && natH > 0) {
+        var ratio = natW / natH;
+        if (widthIsAuto && heightIsAuto) {
+          // Natural size at 96 DPI (1 px = 9525 EMU)
+          widthEmu = Math.round(natW * 9525);
+          heightEmu = Math.round(natH * 9525);
+        } else if (widthIsAuto) {
+          widthEmu = Math.round(heightEmu * ratio);
+        } else {
+          heightEmu = Math.round(widthEmu / ratio);
+        }
+        console.log(
+          "createImageShape: auto-scaled widthEmu =",
+          widthEmu,
+          "heightEmu =",
+          heightEmu,
+          "(ratio =",
+          ratio.toFixed(4) + ")",
+        );
+      } else {
+        console.log(
+          "createImageShape: natural dims unavailable, falling back to square",
+        );
+        if (widthIsAuto && heightIsAuto) {
+          widthEmu = heightEmu = toEmu("20mm") || 0;
+        } else if (widthIsAuto) {
+          widthEmu = heightEmu;
+        } else {
+          heightEmu = widthEmu;
+        }
+      }
+    }
+
     console.log(
       "createImageShape: widthEmu =",
       widthEmu,
@@ -592,13 +669,9 @@
       heightEmu,
     );
 
-    var src = recipe.src || "";
-
-    console.log("createImageShape: src =", src.substring(0, 50));
-
     var shape = null;
     try {
-      shape = Api.CreateImage(src, widthEmu, heightEmu);
+      shape = Api.CreateImage(dataURL, widthEmu, heightEmu);
     } catch (e) {
       console.error("createImageShape: Api.CreateImage failed", e);
       return null;
