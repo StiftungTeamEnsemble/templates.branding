@@ -5,6 +5,9 @@
   const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
   const CM_TO_PT = 72 / 2.54; // ≈ 28.346456692913385 (or MM_TO_PT * 10)
 
+  // base64 -i "/Organisation/Branding/Vorlagen/signets/crop/Team-Ensemble-Logo--crop.png" | pbcopy
+  const logo =
+    "data:image/png;base64,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";
   var doc = Api.GetDocument();
 
   const INPUT = {
@@ -71,6 +74,34 @@
                   className: "Normal",
                 },
               ],
+            },
+          ],
+        },
+      },
+      footers: {
+        default: {
+          childrenDeleteBeforeCreate: true,
+          children: [
+            {
+              type: "image",
+              position: "absolute",
+              left: "17.5mm",
+              top: "281 mm",
+              height: "8mm",
+              src: logo,
+            },
+          ],
+        },
+        first: {
+          childrenDeleteBeforeCreate: true,
+          children: [
+            {
+              type: "image",
+              position: "absolute",
+              left: "17.5mm",
+              top: "281 mm",
+              height: "8mm",
+              src: logo,
             },
           ],
         },
@@ -204,7 +235,7 @@
       return length;
     }
     if (typeof length !== "string") return null;
-    var raw = length.trim().toLowerCase();
+    var raw = length.replaceAll(" ", "").trim().toLowerCase();
     if (!raw.length) return null;
 
     var factor = 1; // default assume pt
@@ -550,6 +581,70 @@
     return shape;
   }
 
+  function createImageShape(recipe) {
+    console.log("createImageShape: recipe =", JSON.stringify(recipe));
+    var widthEmu = toEmu(recipe.width) || 0;
+    var heightEmu = toEmu(recipe.height) || 0;
+    console.log(
+      "createImageShape: widthEmu =",
+      widthEmu,
+      "heightEmu =",
+      heightEmu,
+    );
+
+    var src = recipe.src || "";
+
+    console.log("createImageShape: src =", src.substring(0, 50));
+
+    var shape = null;
+    try {
+      shape = Api.CreateImage(src, widthEmu, heightEmu);
+    } catch (e) {
+      console.error("createImageShape: Api.CreateImage failed", e);
+      return null;
+    }
+    console.log("createImageShape: shape =", shape, "type =", typeof shape);
+    if (!shape) {
+      console.error("createImageShape: Api.CreateImage returned falsy!");
+      return null;
+    }
+
+    try {
+      shape.SetWrappingStyle("inFront");
+    } catch (e) {
+      console.error("createImageShape: SetWrappingStyle failed", e);
+    }
+
+    var leftEmu = toEmu(recipe.left) || 0;
+    var topEmu = toEmu(recipe.top) || 0;
+    var isAbsolute = recipe.position === "absolute";
+    var horRef = isAbsolute ? "page" : "column";
+    var verRef = isAbsolute ? "page" : "paragraph";
+    console.log(
+      "createImageShape: position leftEmu =",
+      leftEmu,
+      "topEmu =",
+      topEmu,
+      "horRef =",
+      horRef,
+      "verRef =",
+      verRef,
+    );
+    try {
+      shape.SetHorPosition(horRef, leftEmu);
+    } catch (e) {
+      console.error("createImageShape: SetHorPosition failed", e);
+    }
+    try {
+      shape.SetVerPosition(verRef, topEmu);
+    } catch (e) {
+      console.error("createImageShape: SetVerPosition failed", e);
+    }
+
+    console.log("createImageShape: done");
+    return shape;
+  }
+
   function populateTextboxContent(doc, shape, recipe) {
     // Must be called AFTER the shape has been added to the document (via AddDrawing + Push)
     if (!recipe.children || !recipe.children.length) return;
@@ -791,6 +886,8 @@
             shape = createLineShape(childRecipe);
           } else if (childRecipe.type === "textbox") {
             shape = createTextboxShape(childRecipe);
+          } else if (childRecipe.type === "image") {
+            shape = createImageShape(childRecipe);
           } else {
             console.log(
               "setHeadersFromRecipe: unknown child type:",
@@ -862,6 +959,202 @@
     console.log("setHeadersFromRecipe: complete");
   }
 
+  function setFootersFromRecipe(doc, section, footersRecipe) {
+    console.log("setFootersFromRecipe: called");
+    console.log(
+      "setFootersFromRecipe: section =",
+      section,
+      "type =",
+      typeof section,
+    );
+    console.log(
+      "setFootersFromRecipe: footersRecipe keys =",
+      footersRecipe ? Object.keys(footersRecipe) : "null",
+    );
+    if (!footersRecipe || !section) {
+      console.error(
+        "setFootersFromRecipe: bailing — footersRecipe or section is falsy",
+      );
+      return;
+    }
+
+    var footerTypes = ["default", "first"];
+
+    for (var h = 0; h < footerTypes.length; h++) {
+      var hType = footerTypes[h];
+      var hRecipe = footersRecipe[hType];
+      if (!hRecipe) {
+        console.log("setFootersFromRecipe: no recipe for footer type:", hType);
+        continue;
+      }
+
+      console.log("setFootersFromRecipe: processing footer type:", hType);
+
+      // Map recipe footer type names to OnlyOffice API footer type names
+      // OnlyOffice uses: "default", "title" (first page), "even"
+      var apiFooterType = hType === "first" ? "title" : hType;
+
+      // Enable different first-page header/footer when "first" is specified
+      if (hType === "first") {
+        if (section.SetTitlePage) {
+          try {
+            section.SetTitlePage(true);
+            console.log("setFootersFromRecipe: SetTitlePage(true) called");
+          } catch (e) {
+            console.error("setFootersFromRecipe: SetTitlePage failed", e);
+          }
+        } else {
+          console.log(
+            "setFootersFromRecipe: section has no SetTitlePage method",
+          );
+        }
+      }
+
+      console.log(
+        "setFootersFromRecipe: calling section.GetFooter(",
+        apiFooterType,
+        ", true)",
+      );
+      var footer = null;
+      try {
+        footer = section.GetFooter(apiFooterType, true);
+      } catch (e) {
+        console.error("setFootersFromRecipe: section.GetFooter threw", e);
+      }
+      console.log(
+        "setFootersFromRecipe: footer =",
+        footer,
+        "type =",
+        typeof footer,
+      );
+      if (!footer) {
+        console.error(
+          "setFootersFromRecipe: Could not get/create footer for type:",
+          hType,
+        );
+        continue;
+      }
+
+      // Clear existing content if requested
+      if (hRecipe.childrenDeleteBeforeCreate) {
+        var count = footer.GetElementsCount ? footer.GetElementsCount() : 0;
+        console.log(
+          "setFootersFromRecipe: clearing",
+          count,
+          "existing elements from",
+          hType,
+          "footer",
+        );
+        for (var r = count - 1; r >= 0; r--) {
+          try {
+            footer.RemoveElement(r);
+          } catch (e) {
+            console.error(
+              "setFootersFromRecipe: RemoveElement(",
+              r,
+              ") failed",
+              e,
+            );
+          }
+        }
+      }
+
+      // Create children (line / textbox / image)
+      var children = hRecipe.children || [];
+      console.log(
+        "setFootersFromRecipe: creating",
+        children.length,
+        "children for",
+        hType,
+      );
+      for (var c = 0; c < children.length; c++) {
+        var childRecipe = children[c];
+        console.log(
+          "setFootersFromRecipe: child[",
+          c,
+          "] type =",
+          childRecipe.type,
+        );
+        var shape = null;
+
+        try {
+          if (childRecipe.type === "line") {
+            shape = createLineShape(childRecipe);
+          } else if (childRecipe.type === "textbox") {
+            shape = createTextboxShape(childRecipe);
+          } else if (childRecipe.type === "image") {
+            shape = createImageShape(childRecipe);
+          } else {
+            console.log(
+              "setFootersFromRecipe: unknown child type:",
+              childRecipe.type,
+            );
+          }
+        } catch (e) {
+          console.error(
+            "setFootersFromRecipe: shape creation failed for child[",
+            c,
+            "]",
+            e,
+          );
+        }
+
+        console.log(
+          "setFootersFromRecipe: shape =",
+          shape,
+          "type =",
+          typeof shape,
+        );
+        if (shape) {
+          try {
+            var para = Api.CreateParagraph();
+            para.AddDrawing(shape);
+            footer.Push(para);
+            console.log(
+              "setFootersFromRecipe: Added",
+              childRecipe.type,
+              "to",
+              hType,
+              "footer",
+            );
+
+            // Populate textbox content AFTER it's been added to the document
+            if (childRecipe.type === "textbox" && childRecipe.children) {
+              try {
+                populateTextboxContent(doc, shape, childRecipe);
+              } catch (e) {
+                console.error(
+                  "setFootersFromRecipe: populateTextboxContent failed",
+                  e,
+                );
+              }
+            }
+          } catch (e) {
+            console.error(
+              "setFootersFromRecipe: failed to add shape to footer",
+              e,
+            );
+          }
+        } else {
+          console.error(
+            "setFootersFromRecipe: shape is falsy for child[",
+            c,
+            "], skipping",
+          );
+        }
+      }
+
+      console.log(
+        "setFootersFromRecipe: done with footer type:",
+        hType,
+        "— added",
+        children.length,
+        "children",
+      );
+    }
+    console.log("setFootersFromRecipe: complete");
+  }
+
   function setPageFromRecipe(doc, pageRecipe) {
     if (!pageRecipe) return;
 
@@ -923,6 +1216,19 @@
         setHeadersFromRecipe(doc, section, pageRecipe.headers);
       } catch (e) {
         console.error("setPageFromRecipe: Failed to apply headers", e);
+      }
+    }
+
+    // Apply footers if provided
+    console.log(
+      "setPageFromRecipe: footers recipe present =",
+      !!pageRecipe.footers,
+    );
+    if (pageRecipe.footers) {
+      try {
+        setFootersFromRecipe(doc, section, pageRecipe.footers);
+      } catch (e) {
+        console.error("setPageFromRecipe: Failed to apply footers", e);
       }
     }
   }
