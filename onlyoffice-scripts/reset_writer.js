@@ -91,6 +91,22 @@
               width: "auto",
               src: logo,
             },
+            {
+              type: "textbox",
+              position: "absolute",
+              left: "31.25mm",
+              top: "281mm",
+              width: "168.75mm",
+              height: "8mm",
+              color: { r: 0, g: 0, b: 0 },
+              children: [
+                {
+                  type: "paragraph",
+                  text: "Stiftung Team Ensemble · team-ensemble.ch",
+                  className: "Normal",
+                },
+              ],
+            },
           ],
         },
         first: {
@@ -100,10 +116,26 @@
               type: "image",
               position: "absolute",
               left: "17.5mm",
-              top: "281 mm",
+              top: "281mm",
               height: "8mm",
               width: "auto",
               src: logo,
+            },
+            {
+              type: "textbox",
+              position: "absolute",
+              left: "31.25mm",
+              top: "281mm",
+              width: "168.75mm",
+              height: "8mm",
+              color: { r: 0, g: 0, b: 0 },
+              children: [
+                {
+                  type: "paragraph",
+                  text: "Stiftung Team Ensemble · team-ensemble.ch",
+                  className: "Normal",
+                },
+              ],
             },
           ],
         },
@@ -591,7 +623,10 @@
       var idx = dataURL.indexOf(marker);
       if (idx === -1) return null;
       // 24 bytes → 32 base64 chars (padded to multiple of 4)
-      var b64slice = dataURL.substring(idx + marker.length, idx + marker.length + 32);
+      var b64slice = dataURL.substring(
+        idx + marker.length,
+        idx + marker.length + 32,
+      );
       var bin = atob(b64slice);
       function b(i) {
         return bin.charCodeAt(i) & 0xff;
@@ -609,7 +644,13 @@
   }
 
   function createImageShape(recipe) {
-    console.log("createImageShape: recipe (src omitted) =", JSON.stringify({ ...recipe, src: recipe.src ? recipe.src.substring(0, 40) + "…" : "" }));
+    console.log(
+      "createImageShape: recipe (src omitted) =",
+      JSON.stringify({
+        ...recipe,
+        src: recipe.src ? recipe.src.substring(0, 40) + "…" : "",
+      }),
+    );
 
     // src must be an inline base64 data URL (e.g. "data:image/png;base64,...")
     var dataURL = recipe.src || "";
