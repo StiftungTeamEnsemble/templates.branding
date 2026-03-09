@@ -35,7 +35,7 @@
               position: "absolute",
               left: "17.5mm",
               top: "18.1mm",
-              width: "182.5mm",
+              width: "27.5mm",
               height: "5mm",
               color: { r: 0, g: 0, b: 0 },
               children: [
@@ -45,6 +45,24 @@
                   fontFamily: "Liberation Mono",
                   fontSize: "7pt",
                   textTransform: "uppercase",
+                  lineHeight: 1,
+                },
+              ],
+            },
+            {
+              type: "textbox",
+              position: "absolute",
+              left: "48.5mm",
+              top: "18.1mm",
+              width: "151.5mm",
+              height: "5mm",
+              color: { r: 0, g: 0, b: 0 },
+              children: [
+                {
+                  type: "paragraph",
+                  text: "title {{styleref:Heading 1}}",
+                  fontFamily: "Geist",
+                  fontSize: "7pt",
                   lineHeight: 1,
                 },
               ],
@@ -76,7 +94,7 @@
               position: "absolute",
               left: "17.5mm",
               top: "18.1mm",
-              width: "182.5mm",
+              width: "27.5mm",
               height: "5mm",
               color: { r: 0, g: 0, b: 0 },
               children: [
@@ -1082,7 +1100,11 @@
       child.text.indexOf("\t") !== -1 &&
       child.text.indexOf("{{page}}") !== -1
     ) {
-      var autoRightTab = toTwips(child.tabStopRight || recipeDefaults.tabStopRight || recipeDefaults.width);
+      var autoRightTab = toTwips(
+        child.tabStopRight ||
+          recipeDefaults.tabStopRight ||
+          recipeDefaults.width,
+      );
       if (autoRightTab != null) {
         positions.push(autoRightTab);
         aligns.push("right");
@@ -1210,7 +1232,10 @@
         try {
           para.SetSpacingBefore(beforeTw);
         } catch (e) {
-          console.error("createParagraphFromRecipe: SetSpacingBefore failed", e);
+          console.error(
+            "createParagraphFromRecipe: SetSpacingBefore failed",
+            e,
+          );
         }
       }
     }
@@ -1240,7 +1265,6 @@
   }
 
   function populateTextboxContent(doc, shape, recipe) {
-    // Must be called AFTER the shape has been added to the document (via AddDrawing + Push)
     if (!recipe.children || !recipe.children.length) return;
 
     var docContent = shape.GetDocContent();
@@ -1255,17 +1279,11 @@
       return;
     }
 
-    // OnlyOffice always keeps at least one paragraph in a content area;
-    // RemoveElement cannot delete the last element.  We push clean new
-    // paragraphs first, then remove the original default paragraph so no
-    // stale formatting leaks through.
-
     var elCount = docContent.GetElementsCount
       ? docContent.GetElementsCount()
       : 0;
     console.log("populateTextboxContent: existing elements =", elCount);
 
-    // Remove all existing elements except the very first (can't be removed yet)
     for (var i = elCount - 1; i >= 1; i--) {
       try {
         docContent.RemoveElement(i);
@@ -1274,7 +1292,6 @@
       }
     }
 
-    // Push all new paragraphs (created fresh, so they carry no old formatting)
     for (var c = 0; c < recipe.children.length; c++) {
       var child = recipe.children[c];
       var para = createParagraphFromRecipe(doc, child, recipe);
@@ -1286,13 +1303,13 @@
           "populateTextboxContent: pushed paragraph with text:",
           child.text,
         );
+
+        tryReplaceParagraphWithDynamicField(para, child);
       } catch (e) {
         console.error("populateTextboxContent: Push paragraph failed", e);
       }
     }
 
-    // Now remove the original default paragraph (index 0) — this is safe
-    // because we just pushed at least one new paragraph above.
     try {
       docContent.RemoveElement(0);
       console.log("populateTextboxContent: removed original default paragraph");
@@ -1443,7 +1460,11 @@
 
         if (childRecipe.type === "paragraph") {
           try {
-            var headerParagraph = createParagraphFromRecipe(doc, childRecipe, hRecipe);
+            var headerParagraph = createParagraphFromRecipe(
+              doc,
+              childRecipe,
+              hRecipe,
+            );
             if (headerParagraph) {
               header.Push(headerParagraph);
               console.log(
