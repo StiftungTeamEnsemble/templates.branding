@@ -55,13 +55,14 @@
               left: "48.5mm",
               top: "18.1mm",
               width: "151.5mm",
-              height: "5mm",
+              height: "15mm",
               color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
-                  text: "title {{styleref:Heading 1}}",
+                  text: "Titel des Dokuments",
                   fontFamily: "Geist",
+                  fontWeight: "bold",
                   fontSize: "7pt",
                   lineHeight: 1,
                 },
