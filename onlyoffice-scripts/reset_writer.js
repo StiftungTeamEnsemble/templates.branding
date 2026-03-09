@@ -128,7 +128,7 @@
               children: [
                 {
                   type: "paragraph",
-                  text: "Stiftung Team Ensemble · team-ensemble.ch",
+                  text: "Stiftung Team Ensemble · team-ensemble.ch\t{{page}}",
                   fontFamily: "Geist",
                   fontSize: "8pt",
                   lineHeight: 1,
@@ -854,10 +854,313 @@
     return shape;
   }
 
+  function applyTextStyleToParagraph(para, textStyle) {
+    if (!para || !textStyle) return;
+
+    var paragraphTextPr = null;
+    try {
+      paragraphTextPr =
+        (para.GetTextPr && para.GetTextPr()) ||
+        (Api.CreateTextPr && Api.CreateTextPr()) ||
+        null;
+    } catch (e) {
+      console.error("applyTextStyleToParagraph: failed to create textPr", e);
+    }
+
+    if (paragraphTextPr) {
+      if (textStyle.fontFamily) {
+        try {
+          paragraphTextPr.SetFontFamily(textStyle.fontFamily);
+        } catch (e) {
+          console.error(
+            "applyTextStyleToParagraph: textPr.SetFontFamily failed",
+            e,
+          );
+        }
+      }
+
+      if (textStyle.fontSize != null) {
+        var szPts = toPoints(textStyle.fontSize);
+        if (szPts != null) {
+          try {
+            paragraphTextPr.SetFontSize(szPts);
+          } catch (e) {
+            console.error(
+              "applyTextStyleToParagraph: textPr.SetFontSize failed",
+              e,
+            );
+          }
+        }
+      }
+
+      if (
+        textStyle.fontWeight === "bold" ||
+        textStyle.fontWeight === "normal"
+      ) {
+        try {
+          paragraphTextPr.SetBold(textStyle.fontWeight === "bold");
+        } catch (e) {
+          console.error("applyTextStyleToParagraph: textPr.SetBold failed", e);
+        }
+      }
+
+      if (
+        textStyle.fontStyle === "italic" ||
+        textStyle.fontStyle === "normal"
+      ) {
+        try {
+          paragraphTextPr.SetItalic(textStyle.fontStyle === "italic");
+        } catch (e) {
+          console.error(
+            "applyTextStyleToParagraph: textPr.SetItalic failed",
+            e,
+          );
+        }
+      }
+
+      if (textStyle.color && typeof textStyle.color === "object") {
+        try {
+          paragraphTextPr.SetColor(
+            textStyle.color.r,
+            textStyle.color.g,
+            textStyle.color.b,
+          );
+        } catch (e) {
+          console.error("applyTextStyleToParagraph: textPr.SetColor failed", e);
+        }
+      }
+
+      if (textStyle.textTransform != null) {
+        try {
+          paragraphTextPr.SetCaps(textStyle.textTransform === "uppercase");
+        } catch (e) {
+          console.error("applyTextStyleToParagraph: textPr.SetCaps failed", e);
+        }
+      }
+
+      try {
+        para.SetTextPr(paragraphTextPr);
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetTextPr failed", e);
+      }
+    }
+
+    if (textStyle.fontFamily) {
+      try {
+        para.SetFontFamily(textStyle.fontFamily);
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetFontFamily failed", e);
+      }
+    }
+
+    if (textStyle.fontSize != null) {
+      var szHps = toHalfPoints(textStyle.fontSize);
+      if (szHps != null) {
+        try {
+          para.SetFontSize(szHps);
+        } catch (e) {
+          console.error("applyTextStyleToParagraph: SetFontSize failed", e);
+        }
+      }
+    }
+
+    if (textStyle.fontWeight === "bold" || textStyle.fontWeight === "normal") {
+      try {
+        para.SetBold(textStyle.fontWeight === "bold");
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetBold failed", e);
+      }
+    }
+
+    if (textStyle.fontStyle === "italic" || textStyle.fontStyle === "normal") {
+      try {
+        para.SetItalic(textStyle.fontStyle === "italic");
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetItalic failed", e);
+      }
+    }
+
+    if (textStyle.color && typeof textStyle.color === "object") {
+      try {
+        para.SetColor(textStyle.color.r, textStyle.color.g, textStyle.color.b);
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetColor failed", e);
+      }
+    }
+
+    if (textStyle.textTransform != null) {
+      try {
+        para.SetCaps(textStyle.textTransform === "uppercase");
+      } catch (e) {
+        console.error("applyTextStyleToParagraph: SetCaps failed", e);
+      }
+    }
+  }
+
+  function applyTextStyleToRun(run, textStyle) {
+    if (!run || !textStyle) return;
+
+    if (textStyle.fontFamily) {
+      try {
+        run.SetFontFamily(textStyle.fontFamily);
+      } catch (e) {
+        console.error("applyTextStyleToRun: SetFontFamily failed", e);
+      }
+    }
+
+    if (textStyle.fontSize != null) {
+      var szHps = toHalfPoints(textStyle.fontSize);
+      if (szHps != null) {
+        try {
+          run.SetFontSize(szHps);
+        } catch (e) {
+          console.error("applyTextStyleToRun: SetFontSize failed", e);
+        }
+      }
+    }
+
+    if (textStyle.fontWeight === "bold" || textStyle.fontWeight === "normal") {
+      try {
+        run.SetBold(textStyle.fontWeight === "bold");
+      } catch (e) {
+        console.error("applyTextStyleToRun: SetBold failed", e);
+      }
+    }
+
+    if (textStyle.fontStyle === "italic" || textStyle.fontStyle === "normal") {
+      try {
+        run.SetItalic(textStyle.fontStyle === "italic");
+      } catch (e) {
+        console.error("applyTextStyleToRun: SetItalic failed", e);
+      }
+    }
+
+    if (textStyle.color && typeof textStyle.color === "object") {
+      try {
+        run.SetColor(textStyle.color.r, textStyle.color.g, textStyle.color.b);
+      } catch (e) {
+        console.error("applyTextStyleToRun: SetColor failed", e);
+      }
+    }
+
+    if (textStyle.textTransform != null) {
+      try {
+        run.SetCaps(textStyle.textTransform === "uppercase");
+      } catch (e) {
+        console.error("applyTextStyleToRun: SetCaps failed", e);
+      }
+    }
+  }
+
+  function setParagraphTabsFromRecipe(para, child, recipeDefaults) {
+    if (!para) return;
+
+    var tabStops = child.tabStops || recipeDefaults.tabStops;
+    var positions = [];
+    var aligns = [];
+
+    if (tabStops && tabStops.length) {
+      for (var i = 0; i < tabStops.length; i++) {
+        var stop = tabStops[i];
+        var pos = null;
+        var align = "left";
+
+        if (typeof stop === "string" || typeof stop === "number") {
+          pos = toTwips(stop);
+        } else if (stop && typeof stop === "object") {
+          pos = toTwips(stop.position != null ? stop.position : stop.at);
+          align = stop.align || stop.type || stop.jc || "left";
+        }
+
+        if (pos != null) {
+          positions.push(pos);
+          aligns.push(align);
+        }
+      }
+    } else if (
+      typeof child.text === "string" &&
+      child.text.indexOf("\t") !== -1 &&
+      child.text.indexOf("{{page}}") !== -1
+    ) {
+      var autoRightTab = toTwips(child.tabStopRight || recipeDefaults.tabStopRight || recipeDefaults.width);
+      if (autoRightTab != null) {
+        positions.push(autoRightTab);
+        aligns.push("right");
+      }
+    }
+
+    if (!positions.length) return;
+
+    try {
+      para.SetTabs(positions, aligns);
+      console.log("setParagraphTabsFromRecipe: SetTabs", positions, aligns);
+    } catch (e) {
+      console.error("setParagraphTabsFromRecipe: SetTabs failed", e);
+    }
+  }
+
+  function insertParagraphText(para, text, textStyle) {
+    if (!para || typeof text !== "string" || !text.length) return;
+
+    var parts = text.split(/(\{\{page\}\}|\{\{pages\}\}|\t)/);
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i];
+      if (!part) continue;
+
+      if (part === "\t") {
+        try {
+          para.AddTabStop();
+        } catch (e) {
+          console.error("insertParagraphText: AddTabStop failed", e);
+        }
+        continue;
+      }
+
+      if (part === "{{page}}") {
+        try {
+          para.AddPageNumber();
+        } catch (e) {
+          console.error("insertParagraphText: AddPageNumber failed", e);
+        }
+        continue;
+      }
+
+      if (part === "{{pages}}") {
+        try {
+          para.AddPagesCount();
+        } catch (e) {
+          console.error("insertParagraphText: AddPagesCount failed", e);
+        }
+        continue;
+      }
+
+      var run = para.AddText(part);
+      if (run) {
+        applyTextStyleToRun(run, textStyle);
+      }
+    }
+  }
+
   function createParagraphFromRecipe(doc, child, recipeDefaults) {
     if (!child || child.type !== "paragraph") return null;
 
     var para = Api.CreateParagraph();
+
+    var textStyle = {
+      fontFamily:
+        child.fontFamily != null ? child.fontFamily : recipeDefaults.fontFamily,
+      fontSize:
+        child.fontSize != null ? child.fontSize : recipeDefaults.fontSize,
+      fontWeight:
+        child.fontWeight != null ? child.fontWeight : recipeDefaults.fontWeight,
+      fontStyle:
+        child.fontStyle != null ? child.fontStyle : recipeDefaults.fontStyle,
+      color: child.color != null ? child.color : recipeDefaults.color,
+      textTransform:
+        child.textTransform != null
+          ? child.textTransform
+          : recipeDefaults.textTransform,
+    };
 
     // Apply paragraph style by className (style name in the document)
     if (child.className) {
@@ -880,6 +1183,8 @@
         );
       }
     }
+
+    setParagraphTabsFromRecipe(para, child, recipeDefaults);
 
     // Inline paragraph spacing — child values override parent recipe defaults
     var inlineLineHeight =
@@ -926,77 +1231,10 @@
     }
 
     if (child.text) {
-      var run = para.AddText(child.text);
-
-      // Resolve inline text properties: child values override parent recipe defaults
-      var inlineFontFamily =
-        child.fontFamily != null ? child.fontFamily : recipeDefaults.fontFamily;
-      var inlineFontSize =
-        child.fontSize != null ? child.fontSize : recipeDefaults.fontSize;
-      var inlineFontWeight =
-        child.fontWeight != null ? child.fontWeight : recipeDefaults.fontWeight;
-      var inlineFontStyle =
-        child.fontStyle != null ? child.fontStyle : recipeDefaults.fontStyle;
-      var inlineColor = child.color != null ? child.color : recipeDefaults.color;
-      var inlineTextTransform =
-        child.textTransform != null
-          ? child.textTransform
-          : recipeDefaults.textTransform;
-
-      if (run) {
-        if (inlineFontFamily) {
-          try {
-            run.SetFontFamily(inlineFontFamily);
-          } catch (e) {
-            console.error("createParagraphFromRecipe: SetFontFamily failed", e);
-          }
-        }
-        if (inlineFontSize != null) {
-          var szHps = toHalfPoints(inlineFontSize);
-          if (szHps != null) {
-            try {
-              run.SetFontSize(szHps);
-            } catch (e) {
-              console.error("createParagraphFromRecipe: SetFontSize failed", e);
-            }
-          }
-        }
-        if (inlineFontWeight === "bold" || inlineFontWeight === "normal") {
-          try {
-            run.SetBold(inlineFontWeight === "bold");
-          } catch (e) {
-            console.error("createParagraphFromRecipe: SetBold failed", e);
-          }
-        }
-        if (inlineFontStyle === "italic" || inlineFontStyle === "normal") {
-          try {
-            run.SetItalic(inlineFontStyle === "italic");
-          } catch (e) {
-            console.error("createParagraphFromRecipe: SetItalic failed", e);
-          }
-        }
-        if (inlineColor && typeof inlineColor === "object") {
-          try {
-            run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
-          } catch (e) {
-            console.error("createParagraphFromRecipe: SetColor failed", e);
-          }
-        }
-        if (inlineTextTransform != null) {
-          try {
-            run.SetCaps(inlineTextTransform === "uppercase");
-          } catch (e) {
-            console.error("createParagraphFromRecipe: SetCaps failed", e);
-          }
-        }
-      } else if (inlineColor && typeof inlineColor === "object") {
-        try {
-          para.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
-        } catch (e) {
-          console.error("createParagraphFromRecipe: para.SetColor failed", e);
-        }
-      }
+      insertParagraphText(para, child.text, textStyle);
     }
+
+    applyTextStyleToParagraph(para, textStyle);
 
     return para;
   }
