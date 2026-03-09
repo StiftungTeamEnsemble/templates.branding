@@ -4,6 +4,8 @@
 (function () {
   const MM_TO_PT = 72 / 25.4; // ≈ 2.834645669291339
   const CM_TO_PT = 72 / 2.54; // ≈ 28.346456692913385 (or MM_TO_PT * 10)
+  const USE_PAGE_SETUP = true;
+  const USE_STYLE_SETUP = true;
 
   // base64 -i "/Organisation/Branding/Vorlagen/signets/crop/Team-Ensemble-Logo--crop.png" | pbcopy
   const logo =
@@ -1867,56 +1869,71 @@
   }
 
   // Get all styles, filter to paragraph styles, and apply updates where names match
-  var allStyles = (doc.GetAllStyles && doc.GetAllStyles()) || [];
   var updated = 0,
     seen = 0;
 
-  for (var s = 0; s < allStyles.length; s++) {
-    var st = allStyles[s];
-    var t = st && st.GetType ? st.GetType() : "";
-    if (t !== "paragraph") continue; // only paragraph styles per your pipeline
+  if (USE_STYLE_SETUP) {
+    var allStyles = (doc.GetAllStyles && doc.GetAllStyles()) || [];
 
-    var name = st && st.GetName ? st.GetName() : "";
-    if (!name || !(name in byName)) {
-      if (name)
-        console.log(
-          "Main loop: style not in recipe, skipping:",
-          JSON.stringify(name),
-        );
-      continue;
-    }
+    for (var s = 0; s < allStyles.length; s++) {
+      var st = allStyles[s];
+      var t = st && st.GetType ? st.GetType() : "";
+      if (t !== "paragraph") continue; // only paragraph styles per your pipeline
 
-    seen++;
-    console.log(
-      "Main loop: processing style",
-      JSON.stringify(name),
-      "type:",
-      t,
-    );
-    try {
-      setTextPrFromRecipe(st, byName[name]);
-      setParaPrFromRecipe(st, byName[name]);
-      updated++;
-    } catch (e) {
-      console.error(
-        "Main loop: error processing style",
+      var name = st && st.GetName ? st.GetName() : "";
+      if (!name || !(name in byName)) {
+        if (name)
+          console.log(
+            "Main loop: style not in recipe, skipping:",
+            JSON.stringify(name),
+          );
+        continue;
+      }
+
+      seen++;
+      console.log(
+        "Main loop: processing style",
         JSON.stringify(name),
-        e,
+        "type:",
+        t,
       );
+      try {
+        setTextPrFromRecipe(st, byName[name]);
+        setParaPrFromRecipe(st, byName[name]);
+        updated++;
+      } catch (e) {
+        console.error(
+          "Main loop: error processing style",
+          JSON.stringify(name),
+          e,
+        );
+      }
     }
+  } else {
+    console.log(
+      "Main: USE_STYLE_SETUP is false, skipping paragraph style updates",
+    );
   }
 
   // Apply page paddings (margins) if provided
-  console.log("Main: applying page recipe...");
-  try {
-    setPageFromRecipe(doc, INPUT.page);
-    console.log("Main: setPageFromRecipe completed");
-  } catch (e) {
-    console.error("Main: setPageFromRecipe threw", e);
+  if (USE_PAGE_SETUP) {
+    console.log("Main: applying page recipe...");
+    try {
+      setPageFromRecipe(doc, INPUT.page);
+      console.log("Main: setPageFromRecipe completed");
+    } catch (e) {
+      console.error("Main: setPageFromRecipe threw", e);
+    }
+  } else {
+    console.log(
+      "Main: USE_PAGE_SETUP is false, skipping page/header/footer updates",
+    );
   }
 
   // Leave a small comment summary so you see what happened
   var report = {
+    usePageSetup: USE_PAGE_SETUP,
+    useStyleSetup: USE_STYLE_SETUP,
     matchedStylesByName: seen,
     updatedStyles: updated,
     note: "Matched by style name; sizes interpreted as points and written in half-points.",
