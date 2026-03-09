@@ -16,6 +16,7 @@
       paddingBottom: "24.5mm",
       paddingLeft: "48.5mm",
       paddingRight: "10mm",
+      headerFromTop: "9mm",
       headers: {
         default: {
           childrenDeleteBeforeCreate: true,
@@ -34,19 +35,27 @@
               position: "absolute",
               left: "17.5mm",
               top: "18.1mm",
-              width: "100mm",
-              height: "20mm",
+              width: "182.5mm",
+              height: "5mm",
               color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
-                  text: "Januar 202x",
+                  text: "Januar 202x – default",
                   fontFamily: "Liberation Mono",
                   fontSize: "7pt",
                   textTransform: "uppercase",
                   lineHeight: 1,
                 },
               ],
+            },
+            {
+              type: "paragraph",
+              text: "\n\n",
+              fontFamily: "Liberation Mono",
+              fontSize: "7pt",
+              textTransform: "uppercase",
+              lineHeight: 1,
             },
           ],
         },
@@ -67,13 +76,13 @@
               position: "absolute",
               left: "17.5mm",
               top: "18.1mm",
-              width: "100mm",
-              height: "20mm",
+              width: "182.5mm",
+              height: "5mm",
               color: { r: 0, g: 0, b: 0 },
               children: [
                 {
                   type: "paragraph",
-                  text: "Januar 202x",
+                  text: "Januar 202x – first",
                   fontFamily: "Liberation Mono",
                   fontSize: "7pt",
                   textTransform: "uppercase",
@@ -421,15 +430,15 @@
     var styleName = style && style.GetName ? style.GetName() : "<unknown>";
     console.log("setParaPrFromRecipe: entering for", styleName);
 
-    var hasParagraphPr = !!(style.GetParagraphPr);
-    var hasParaPr = !!(style.GetParaPr);
+    var hasParagraphPr = !!style.GetParagraphPr;
+    var hasParaPr = !!style.GetParaPr;
     console.log(
       "setParaPrFromRecipe:",
       styleName,
       "has GetParagraphPr:",
       hasParagraphPr,
       "has GetParaPr:",
-      hasParaPr
+      hasParaPr,
     );
 
     var pp =
@@ -440,7 +449,7 @@
       console.warn(
         "setParaPrFromRecipe: no paragraph properties object (pp) for style",
         styleName,
-        "— skipping para spacing"
+        "— skipping para spacing",
       );
       return;
     }
@@ -451,7 +460,11 @@
         pp.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
         console.log("Applied lineHeight", ls, "for", styleName);
       } catch (e) {
-        console.error("setParaPrFromRecipe: SetSpacingLine failed for", styleName, e);
+        console.error(
+          "setParaPrFromRecipe: SetSpacingLine failed for",
+          styleName,
+          e,
+        );
       }
     }
 
@@ -462,7 +475,11 @@
           pp.SetSpacingBefore(before);
           console.log("Applied paddingTop", before, "twips for", styleName);
         } catch (e) {
-          console.error("setParaPrFromRecipe: SetSpacingBefore failed for", styleName, e);
+          console.error(
+            "setParaPrFromRecipe: SetSpacingBefore failed for",
+            styleName,
+            e,
+          );
         }
       }
     }
@@ -475,14 +492,18 @@
         ") =>",
         after,
         "for",
-        styleName
+        styleName,
       );
       if (after != null) {
         try {
           pp.SetSpacingAfter(after);
           console.log("Applied paddingBottom", after, "twips for", styleName);
         } catch (e) {
-          console.error("setParaPrFromRecipe: SetSpacingAfter failed for", styleName, e);
+          console.error(
+            "setParaPrFromRecipe: SetSpacingAfter failed for",
+            styleName,
+            e,
+          );
         }
       }
     }
@@ -1465,11 +1486,13 @@
     var bottom = toTwips(pageRecipe.paddingBottom);
     var left = toTwips(pageRecipe.paddingLeft);
     var right = toTwips(pageRecipe.paddingRight);
+    var headerFromTop = toTwips(pageRecipe.headerFromTop);
     console.log("Computed margins (twips)", {
       top: top,
       bottom: bottom,
       left: left,
       right: right,
+      headerFromTop: headerFromTop,
     });
 
     var marginsApplied = false;
@@ -1495,6 +1518,21 @@
       }
     } catch (e) {
       console.error("Failed to apply margins", e);
+    }
+
+    if (headerFromTop != null) {
+      try {
+        if (section.SetHeaderDistance) {
+          section.SetHeaderDistance(headerFromTop);
+          console.log("SetHeaderDistance applied on section", headerFromTop);
+        } else {
+          console.log(
+            "setPageFromRecipe: section has no SetHeaderDistance method",
+          );
+        }
+      } catch (e) {
+        console.error("Failed to apply headerFromTop", e);
+      }
     }
 
     // If first-page differentiation is active on either side, ensure both headers
@@ -1564,18 +1602,31 @@
 
     var name = st && st.GetName ? st.GetName() : "";
     if (!name || !(name in byName)) {
-      if (name) console.log("Main loop: style not in recipe, skipping:", JSON.stringify(name));
+      if (name)
+        console.log(
+          "Main loop: style not in recipe, skipping:",
+          JSON.stringify(name),
+        );
       continue;
     }
 
     seen++;
-    console.log("Main loop: processing style", JSON.stringify(name), "type:", t);
+    console.log(
+      "Main loop: processing style",
+      JSON.stringify(name),
+      "type:",
+      t,
+    );
     try {
       setTextPrFromRecipe(st, byName[name]);
       setParaPrFromRecipe(st, byName[name]);
       updated++;
     } catch (e) {
-      console.error("Main loop: error processing style", JSON.stringify(name), e);
+      console.error(
+        "Main loop: error processing style",
+        JSON.stringify(name),
+        e,
+      );
     }
   }
 
