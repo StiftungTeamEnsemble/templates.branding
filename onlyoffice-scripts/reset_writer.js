@@ -41,7 +41,7 @@
               children: [
                 {
                   type: "paragraph",
-                  text: "Januar 202x – default",
+                  text: "Januar 202x",
                   fontFamily: "Liberation Mono",
                   fontSize: "7pt",
                   textTransform: "uppercase",
@@ -51,7 +51,7 @@
             },
             {
               type: "paragraph",
-              text: "\n\n",
+              text: "\n\n\n\n\n\n",
               fontFamily: "Liberation Mono",
               fontSize: "7pt",
               textTransform: "uppercase",
@@ -82,7 +82,7 @@
               children: [
                 {
                   type: "paragraph",
-                  text: "Januar 202x – first",
+                  text: "Januar 202x",
                   fontFamily: "Liberation Mono",
                   fontSize: "7pt",
                   textTransform: "uppercase",
@@ -854,6 +854,153 @@
     return shape;
   }
 
+  function createParagraphFromRecipe(doc, child, recipeDefaults) {
+    if (!child || child.type !== "paragraph") return null;
+
+    var para = Api.CreateParagraph();
+
+    // Apply paragraph style by className (style name in the document)
+    if (child.className) {
+      try {
+        var style = doc.GetStyle(child.className);
+        if (style) {
+          para.SetStyle(style);
+          console.log("createParagraphFromRecipe: set style", child.className);
+        } else {
+          console.error(
+            "createParagraphFromRecipe: style not found:",
+            child.className,
+          );
+        }
+      } catch (e) {
+        console.error(
+          "createParagraphFromRecipe: SetStyle failed for",
+          child.className,
+          e,
+        );
+      }
+    }
+
+    // Inline paragraph spacing — child values override parent recipe defaults
+    var inlineLineHeight =
+      child.lineHeight != null ? child.lineHeight : recipeDefaults.lineHeight;
+    if (inlineLineHeight != null) {
+      var ls = toLineSpacing(inlineLineHeight);
+      if (ls && ls.value != null) {
+        try {
+          para.SetSpacingLine(ls.value, ls.mode === "exact" ? "exact" : "auto");
+        } catch (e) {
+          console.error("createParagraphFromRecipe: SetSpacingLine failed", e);
+        }
+      }
+    }
+
+    var inlineParaPaddingTop =
+      child.paddingTop != null
+        ? child.paddingTop
+        : recipeDefaults.paragraphPaddingTop;
+    if (inlineParaPaddingTop != null) {
+      var beforeTw = toTwips(inlineParaPaddingTop);
+      if (beforeTw != null) {
+        try {
+          para.SetSpacingBefore(beforeTw);
+        } catch (e) {
+          console.error("createParagraphFromRecipe: SetSpacingBefore failed", e);
+        }
+      }
+    }
+
+    var inlineParaPaddingBottom =
+      child.paddingBottom != null
+        ? child.paddingBottom
+        : recipeDefaults.paragraphPaddingBottom;
+    if (inlineParaPaddingBottom != null) {
+      var afterTw = toTwips(inlineParaPaddingBottom);
+      if (afterTw != null) {
+        try {
+          para.SetSpacingAfter(afterTw);
+        } catch (e) {
+          console.error("createParagraphFromRecipe: SetSpacingAfter failed", e);
+        }
+      }
+    }
+
+    if (child.text) {
+      var run = para.AddText(child.text);
+
+      // Resolve inline text properties: child values override parent recipe defaults
+      var inlineFontFamily =
+        child.fontFamily != null ? child.fontFamily : recipeDefaults.fontFamily;
+      var inlineFontSize =
+        child.fontSize != null ? child.fontSize : recipeDefaults.fontSize;
+      var inlineFontWeight =
+        child.fontWeight != null ? child.fontWeight : recipeDefaults.fontWeight;
+      var inlineFontStyle =
+        child.fontStyle != null ? child.fontStyle : recipeDefaults.fontStyle;
+      var inlineColor = child.color != null ? child.color : recipeDefaults.color;
+      var inlineTextTransform =
+        child.textTransform != null
+          ? child.textTransform
+          : recipeDefaults.textTransform;
+
+      if (run) {
+        if (inlineFontFamily) {
+          try {
+            run.SetFontFamily(inlineFontFamily);
+          } catch (e) {
+            console.error("createParagraphFromRecipe: SetFontFamily failed", e);
+          }
+        }
+        if (inlineFontSize != null) {
+          var szHps = toHalfPoints(inlineFontSize);
+          if (szHps != null) {
+            try {
+              run.SetFontSize(szHps);
+            } catch (e) {
+              console.error("createParagraphFromRecipe: SetFontSize failed", e);
+            }
+          }
+        }
+        if (inlineFontWeight === "bold" || inlineFontWeight === "normal") {
+          try {
+            run.SetBold(inlineFontWeight === "bold");
+          } catch (e) {
+            console.error("createParagraphFromRecipe: SetBold failed", e);
+          }
+        }
+        if (inlineFontStyle === "italic" || inlineFontStyle === "normal") {
+          try {
+            run.SetItalic(inlineFontStyle === "italic");
+          } catch (e) {
+            console.error("createParagraphFromRecipe: SetItalic failed", e);
+          }
+        }
+        if (inlineColor && typeof inlineColor === "object") {
+          try {
+            run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
+          } catch (e) {
+            console.error("createParagraphFromRecipe: SetColor failed", e);
+          }
+        }
+        if (inlineTextTransform != null) {
+          try {
+            run.SetCaps(inlineTextTransform === "uppercase");
+          } catch (e) {
+            console.error("createParagraphFromRecipe: SetCaps failed", e);
+          }
+        }
+      } else if (inlineColor && typeof inlineColor === "object") {
+        try {
+          para.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
+        } catch (e) {
+          console.error("createParagraphFromRecipe: para.SetColor failed", e);
+        }
+      }
+    }
+
+    return para;
+  }
+
   function populateTextboxContent(doc, shape, recipe) {
     // Must be called AFTER the shape has been added to the document (via AddDrawing + Push)
     if (!recipe.children || !recipe.children.length) return;
@@ -892,144 +1039,8 @@
     // Push all new paragraphs (created fresh, so they carry no old formatting)
     for (var c = 0; c < recipe.children.length; c++) {
       var child = recipe.children[c];
-      if (child.type !== "paragraph") continue;
-
-      var para = Api.CreateParagraph();
-
-      // Apply paragraph style by className (style name in the document)
-      if (child.className) {
-        try {
-          var style = doc.GetStyle(child.className);
-          if (style) {
-            para.SetStyle(style);
-            console.log("populateTextboxContent: set style", child.className);
-          } else {
-            console.error(
-              "populateTextboxContent: style not found:",
-              child.className,
-            );
-          }
-        } catch (e) {
-          console.error(
-            "populateTextboxContent: SetStyle failed for",
-            child.className,
-            e,
-          );
-        }
-      }
-
-      // Inline paragraph spacing — child values override textbox recipe defaults
-      var inlineLineHeight =
-        child.lineHeight != null ? child.lineHeight : recipe.lineHeight;
-      if (inlineLineHeight != null) {
-        var ls = toLineSpacing(inlineLineHeight);
-        if (ls && ls.value != null) {
-          try {
-            para.SetSpacingLine(
-              ls.value,
-              ls.mode === "exact" ? "exact" : "auto",
-            );
-          } catch (e) {
-            console.error("populateTextboxContent: SetSpacingLine failed", e);
-          }
-        }
-      }
-      var inlineParaPaddingTop =
-        child.paddingTop != null
-          ? child.paddingTop
-          : recipe.paragraphPaddingTop;
-      if (inlineParaPaddingTop != null) {
-        var beforeTw = toTwips(inlineParaPaddingTop);
-        if (beforeTw != null) {
-          try {
-            para.SetSpacingBefore(beforeTw);
-          } catch (e) {}
-        }
-      }
-      var inlineParaPaddingBottom =
-        child.paddingBottom != null
-          ? child.paddingBottom
-          : recipe.paragraphPaddingBottom;
-      if (inlineParaPaddingBottom != null) {
-        var afterTw = toTwips(inlineParaPaddingBottom);
-        if (afterTw != null) {
-          try {
-            para.SetSpacingAfter(afterTw);
-          } catch (e) {}
-        }
-      }
-
-      if (child.text) {
-        var run = para.AddText(child.text);
-
-        // Resolve inline text properties: child values override textbox recipe defaults
-        var inlineFontFamily =
-          child.fontFamily != null ? child.fontFamily : recipe.fontFamily;
-        var inlineFontSize =
-          child.fontSize != null ? child.fontSize : recipe.fontSize;
-        var inlineFontWeight =
-          child.fontWeight != null ? child.fontWeight : recipe.fontWeight;
-        var inlineFontStyle =
-          child.fontStyle != null ? child.fontStyle : recipe.fontStyle;
-        var inlineColor = child.color != null ? child.color : recipe.color;
-        var inlineTextTransform =
-          child.textTransform != null
-            ? child.textTransform
-            : recipe.textTransform;
-
-        if (run) {
-          if (inlineFontFamily) {
-            try {
-              run.SetFontFamily(inlineFontFamily);
-            } catch (e) {
-              console.error("populateTextboxContent: SetFontFamily failed", e);
-            }
-          }
-          if (inlineFontSize != null) {
-            var szHps = toHalfPoints(inlineFontSize);
-            if (szHps != null) {
-              try {
-                run.SetFontSize(szHps);
-              } catch (e) {
-                console.error("populateTextboxContent: SetFontSize failed", e);
-              }
-            }
-          }
-          if (inlineFontWeight === "bold" || inlineFontWeight === "normal") {
-            try {
-              run.SetBold(inlineFontWeight === "bold");
-            } catch (e) {
-              console.error("populateTextboxContent: SetBold failed", e);
-            }
-          }
-          if (inlineFontStyle === "italic" || inlineFontStyle === "normal") {
-            try {
-              run.SetItalic(inlineFontStyle === "italic");
-            } catch (e) {
-              console.error("populateTextboxContent: SetItalic failed", e);
-            }
-          }
-          if (inlineColor && typeof inlineColor === "object") {
-            try {
-              run.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
-            } catch (e) {
-              console.error("populateTextboxContent: run.SetColor failed", e);
-            }
-          }
-          if (inlineTextTransform != null) {
-            try {
-              run.SetCaps(inlineTextTransform === "uppercase");
-            } catch (e) {
-              console.error("populateTextboxContent: SetCaps failed", e);
-            }
-          }
-        } else {
-          // Fallback if AddText doesn't return a run
-          if (inlineColor && typeof inlineColor === "object") {
-            para.SetColor(inlineColor.r, inlineColor.g, inlineColor.b);
-          }
-        }
-      }
+      var para = createParagraphFromRecipe(doc, child, recipe);
+      if (!para) continue;
 
       try {
         docContent.Push(para);
@@ -1191,6 +1202,27 @@
           "] type =",
           childRecipe.type,
         );
+
+        if (childRecipe.type === "paragraph") {
+          try {
+            var headerParagraph = createParagraphFromRecipe(doc, childRecipe, hRecipe);
+            if (headerParagraph) {
+              header.Push(headerParagraph);
+              console.log(
+                "setHeadersFromRecipe: Added paragraph to",
+                hType,
+                "header",
+              );
+            }
+          } catch (e) {
+            console.error(
+              "setHeadersFromRecipe: failed to add paragraph to header",
+              e,
+            );
+          }
+          continue;
+        }
+
         var shape = null;
 
         try {
