@@ -72,7 +72,7 @@
             },
             {
               type: "paragraph",
-              text: "\n\n\n\n\n\n",
+              text: "\n\n",
               fontFamily: "Liberation Mono",
               fontSize: "7pt",
               textTransform: "uppercase",
