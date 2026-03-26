@@ -16,8 +16,8 @@
     page: {
       paddingTop: "27.4mm",
       paddingBottom: "24.5mm",
-      paddingLeft: "48.5mm",
-      paddingRight: "10mm",
+      paddingLeft: "46.5mm",
+      paddingRight: "12mm",
       headerFromTop: "9mm",
       headers: {
         default: {
@@ -26,7 +26,7 @@
             {
               type: "line",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "16mm",
               width: "27.5mm",
               borderWidth: "1pt",
@@ -35,7 +35,7 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "18.1mm",
               width: "27.5mm",
               height: "5mm",
@@ -86,7 +86,7 @@
             {
               type: "line",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "16mm",
               width: "27.5mm",
               borderWidth: "1pt",
@@ -95,7 +95,7 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "18.1mm",
               width: "27.5mm",
               height: "5mm",
@@ -121,7 +121,7 @@
             {
               type: "line",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "277.5mm",
               width: "182.5mm",
               borderWidth: "1pt",
@@ -130,7 +130,7 @@
             {
               type: "image",
               position: "absolute",
-              left: "17.5mm",
+              left: "15.5mm",
               top: "281 mm",
               height: "8mm",
               width: "auto",
@@ -139,7 +139,7 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "31.25mm",
+              left: "29.25mm",
               top: "281mm",
               width: "168.75mm",
               height: "8mm",
@@ -310,6 +310,69 @@
     var pts = toPoints(length);
     if (pts == null) return null;
     return Math.round(pts * 12700);
+  }
+
+  function getShapeInsetEmu(primaryValue, aliasValue, fallbackValue) {
+    if (primaryValue != null) return toEmu(primaryValue) || 0;
+    if (aliasValue != null) return toEmu(aliasValue) || 0;
+    return fallbackValue;
+  }
+
+  function getTextboxPaddings(recipe) {
+    var padShorthand =
+      recipe && recipe.padding != null
+        ? toEmu(recipe.padding) || 0
+        : recipe && recipe.margin != null
+          ? toEmu(recipe.margin) || 0
+          : 0;
+
+    return {
+      top: getShapeInsetEmu(
+        recipe ? recipe.paddingTop : null,
+        recipe ? recipe.marginTop : null,
+        padShorthand,
+      ),
+      right: getShapeInsetEmu(
+        recipe ? recipe.paddingRight : null,
+        recipe ? recipe.marginRight : null,
+        padShorthand,
+      ),
+      bottom: getShapeInsetEmu(
+        recipe ? recipe.paddingBottom : null,
+        recipe ? recipe.marginBottom : null,
+        padShorthand,
+      ),
+      left: getShapeInsetEmu(
+        recipe ? recipe.paddingLeft : null,
+        recipe ? recipe.marginLeft : null,
+        padShorthand,
+      ),
+    };
+  }
+
+  function applyTextboxPaddings(shape, recipe) {
+    if (!shape) return;
+
+    var paddings = getTextboxPaddings(recipe || {});
+    try {
+      var applied = shape.SetPaddings(
+        paddings.left,
+        paddings.top,
+        paddings.right,
+        paddings.bottom,
+      );
+      console.log(
+        "applyTextboxPaddings: SetPaddings",
+        paddings.left,
+        paddings.top,
+        paddings.right,
+        paddings.bottom,
+        "applied =",
+        applied,
+      );
+    } catch (e) {
+      console.error("applyTextboxPaddings: SetPaddings failed", e);
+    }
   }
 
   function toLineSpacing(lineHeight) {
@@ -658,38 +721,6 @@
       shape.SetVerPosition(verRef, topEmu);
     } catch (e) {
       console.error("createTextboxShape: SetVerPosition failed", e);
-    }
-
-    // Textbox inner padding — supports CSS shorthand or per-side values.
-    // `padding: "2mm"` sets all four sides.
-    // `paddingTop`, `paddingRight`, `paddingBottom`, `paddingLeft` set individual sides.
-    // Per-side values take precedence over the shorthand. Default is 0 on all sides.
-    var padShorthand = recipe.padding != null ? toEmu(recipe.padding) || 0 : 0;
-    var padTop =
-      recipe.paddingTop != null ? toEmu(recipe.paddingTop) || 0 : padShorthand;
-    var padRight =
-      recipe.paddingRight != null
-        ? toEmu(recipe.paddingRight) || 0
-        : padShorthand;
-    var padBottom =
-      recipe.paddingBottom != null
-        ? toEmu(recipe.paddingBottom) || 0
-        : padShorthand;
-    var padLeft =
-      recipe.paddingLeft != null
-        ? toEmu(recipe.paddingLeft) || 0
-        : padShorthand;
-    try {
-      shape.SetPaddings(padLeft, padTop, padRight, padBottom);
-      console.log(
-        "createTextboxShape: SetPaddings",
-        padLeft,
-        padTop,
-        padRight,
-        padBottom,
-      );
-    } catch (e) {
-      console.error("createTextboxShape: SetPaddings failed", e);
     }
 
     // Vertical text alignment via CSS align-items terms
@@ -1290,12 +1321,12 @@
           "populateTextboxContent: pushed paragraph with text:",
           child.text,
         );
-
-        tryReplaceParagraphWithDynamicField(para, child);
       } catch (e) {
         console.error("populateTextboxContent: Push paragraph failed", e);
       }
     }
+
+    applyTextboxPaddings(shape, recipe);
 
     try {
       docContent.RemoveElement(0);
@@ -1504,6 +1535,9 @@
             var para = Api.CreateParagraph();
             para.AddDrawing(shape);
             header.Push(para);
+            if (childRecipe.type === "textbox") {
+              applyTextboxPaddings(shape, childRecipe);
+            }
             console.log(
               "setHeadersFromRecipe: Added",
               childRecipe.type,
@@ -1700,6 +1734,9 @@
             var para = Api.CreateParagraph();
             para.AddDrawing(shape);
             footer.Push(para);
+            if (childRecipe.type === "textbox") {
+              applyTextboxPaddings(shape, childRecipe);
+            }
             console.log(
               "setFootersFromRecipe: Added",
               childRecipe.type,
