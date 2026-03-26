@@ -54,7 +54,7 @@
             {
               type: "textbox",
               position: "absolute",
-              left: "48.5mm",
+              left: "46.5mm",
               top: "18.1mm",
               width: "151.5mm",
               height: "15mm",
@@ -73,12 +73,11 @@
             {
               type: "paragraph",
               text: "",
-              fontFamily: "Liberation Mono",
               fontFamily: "Geist",
               fontWeight: "bold",
               fontSize: "7pt",
               lineHeight: 1,
-              paddingBottom: "30mm",
+              paddingBottom: "31.5mm",
             },
           ],
         },
@@ -158,6 +157,15 @@
                   paddingBottom: 0,
                 },
               ],
+            },
+             {
+              type: "paragraph",
+              text: "",
+              fontFamily: "Geist",
+              fontWeight: "bold",
+              fontSize: "7pt",
+              lineHeight: 1,
+              paddingTop: "27mm",
             },
           ],
         },
@@ -1394,6 +1402,28 @@
     }
   }
 
+  function removeLeadingImplicitParagraph(
+    container,
+    retainedParagraph,
+    logPrefix,
+    targetLabel,
+  ) {
+    if (!container || !retainedParagraph) return;
+
+    try {
+      var count = container.GetElementsCount ? container.GetElementsCount() : 0;
+      if (count <= 1 || !container.GetElement || !container.RemoveElement) return;
+
+      var firstElement = container.GetElement(0);
+      if (!firstElement || firstElement === retainedParagraph) return;
+
+      container.RemoveElement(0);
+      console.log(logPrefix + ": removed implicit leading paragraph from", targetLabel);
+    } catch (e) {
+      console.error(logPrefix + ": failed to remove implicit leading paragraph", e);
+    }
+  }
+
   function setHeadersFromRecipe(doc, section, headersRecipe) {
     console.log("setHeadersFromRecipe: called");
     console.log(
@@ -1550,6 +1580,12 @@
             );
             if (headerParagraph) {
               header.Push(headerParagraph);
+              removeLeadingImplicitParagraph(
+                header,
+                headerParagraph,
+                "setHeadersFromRecipe",
+                hType + " header",
+              );
               if (!drawingAnchorParagraph) {
                 drawingAnchorParagraph = headerParagraph;
                 for (var pd = 0; pd < pendingDrawings.length; pd++) {
@@ -1808,6 +1844,12 @@
             );
             if (footerParagraph) {
               footer.Push(footerParagraph);
+              removeLeadingImplicitParagraph(
+                footer,
+                footerParagraph,
+                "setFootersFromRecipe",
+                hType + " footer",
+              );
               if (!drawingAnchorParagraph) {
                 drawingAnchorParagraph = footerParagraph;
                 for (var pd = 0; pd < pendingDrawings.length; pd++) {
