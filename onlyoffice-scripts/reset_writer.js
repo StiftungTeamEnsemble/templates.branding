@@ -72,11 +72,13 @@
             },
             {
               type: "paragraph",
-              text: "\n\n",
+              text: "",
               fontFamily: "Liberation Mono",
+              fontFamily: "Geist",
+              fontWeight: "bold",
               fontSize: "7pt",
-              textTransform: "uppercase",
               lineHeight: 1,
+              paddingBottom: "30mm",
             },
           ],
         },
@@ -1331,6 +1333,67 @@
     }
   }
 
+  function attachShapeToParagraph(
+    doc,
+    anchorParagraph,
+    shape,
+    childRecipe,
+    logPrefix,
+    targetLabel,
+  ) {
+    if (!anchorParagraph || !shape || !childRecipe) return;
+
+    anchorParagraph.AddDrawing(shape);
+    if (childRecipe.type === "textbox") {
+      applyTextboxPaddings(shape, childRecipe);
+    }
+    console.log(logPrefix + ": Added", childRecipe.type, "to", targetLabel);
+
+    if (childRecipe.type === "textbox" && childRecipe.children) {
+      try {
+        populateTextboxContent(doc, shape, childRecipe);
+      } catch (e) {
+        console.error(logPrefix + ": populateTextboxContent failed", e);
+      }
+    }
+  }
+
+  function getOrCreateDrawingAnchor(container, logPrefix, targetLabel) {
+    if (!container) return null;
+
+    try {
+      var count = container.GetElementsCount ? container.GetElementsCount() : 0;
+      if (count > 0 && container.GetElement) {
+        var existingParagraph = container.GetElement(0);
+        if (existingParagraph) {
+          console.log(
+            logPrefix + ": reusing existing anchor paragraph for",
+            targetLabel,
+          );
+          return existingParagraph;
+        }
+      }
+    } catch (e) {
+      console.error(logPrefix + ": failed to reuse existing anchor", e);
+    }
+
+    try {
+      var createdParagraph = Api.CreateParagraph();
+      container.Push(createdParagraph);
+      console.log(
+        logPrefix + ": created shared anchor paragraph for",
+        targetLabel,
+      );
+      return createdParagraph;
+    } catch (e) {
+      console.error(
+        logPrefix + ": failed to create shared anchor paragraph",
+        e,
+      );
+      return null;
+    }
+  }
+
   function setHeadersFromRecipe(doc, section, headersRecipe) {
     console.log("setHeadersFromRecipe: called");
     console.log(
@@ -1437,22 +1500,32 @@
           hType,
           "header",
         );
-        for (var r = count - 1; r >= 0; r--) {
+        if (header.RemoveAllElements) {
           try {
-            header.RemoveElement(r);
+            header.RemoveAllElements();
           } catch (e) {
-            console.error(
-              "setHeadersFromRecipe: RemoveElement(",
-              r,
-              ") failed",
-              e,
-            );
+            console.error("setHeadersFromRecipe: RemoveAllElements failed", e);
+          }
+        } else {
+          for (var r = count - 1; r >= 0; r--) {
+            try {
+              header.RemoveElement(r);
+            } catch (e) {
+              console.error(
+                "setHeadersFromRecipe: RemoveElement(",
+                r,
+                ") failed",
+                e,
+              );
+            }
           }
         }
       }
 
       // Create children (line / textbox)
       var children = hRecipe.children || [];
+      var drawingAnchorParagraph = null;
+      var pendingDrawings = [];
       console.log(
         "setHeadersFromRecipe: creating",
         children.length,
@@ -1477,6 +1550,21 @@
             );
             if (headerParagraph) {
               header.Push(headerParagraph);
+              if (!drawingAnchorParagraph) {
+                drawingAnchorParagraph = headerParagraph;
+                for (var pd = 0; pd < pendingDrawings.length; pd++) {
+                  var pendingDrawing = pendingDrawings[pd];
+                  attachShapeToParagraph(
+                    doc,
+                    drawingAnchorParagraph,
+                    pendingDrawing.shape,
+                    pendingDrawing.childRecipe,
+                    "setHeadersFromRecipe",
+                    hType + " header",
+                  );
+                }
+                pendingDrawings = [];
+              }
               console.log(
                 "setHeadersFromRecipe: Added paragraph to",
                 hType,
@@ -1524,30 +1612,20 @@
         );
         if (shape) {
           try {
-            var para = Api.CreateParagraph();
-            para.AddDrawing(shape);
-            header.Push(para);
-            if (childRecipe.type === "textbox") {
-              applyTextboxPaddings(shape, childRecipe);
-            }
-            console.log(
-              "setHeadersFromRecipe: Added",
-              childRecipe.type,
-              "to",
-              hType,
-              "header",
-            );
-
-            // Populate textbox content AFTER it's been added to the document
-            if (childRecipe.type === "textbox" && childRecipe.children) {
-              try {
-                populateTextboxContent(doc, shape, childRecipe);
-              } catch (e) {
-                console.error(
-                  "setHeadersFromRecipe: populateTextboxContent failed",
-                  e,
-                );
-              }
+            if (drawingAnchorParagraph) {
+              attachShapeToParagraph(
+                doc,
+                drawingAnchorParagraph,
+                shape,
+                childRecipe,
+                "setHeadersFromRecipe",
+                hType + " header",
+              );
+            } else {
+              pendingDrawings.push({
+                shape: shape,
+                childRecipe: childRecipe,
+              });
             }
           } catch (e) {
             console.error(
@@ -1560,6 +1638,25 @@
             "setHeadersFromRecipe: shape is falsy for child[",
             c,
             "], skipping",
+          );
+        }
+      }
+
+      if (pendingDrawings.length) {
+        drawingAnchorParagraph = getOrCreateDrawingAnchor(
+          header,
+          "setHeadersFromRecipe",
+          hType + " header",
+        );
+        for (var ph = 0; ph < pendingDrawings.length; ph++) {
+          var pendingHeaderDrawing = pendingDrawings[ph];
+          attachShapeToParagraph(
+            doc,
+            drawingAnchorParagraph,
+            pendingHeaderDrawing.shape,
+            pendingHeaderDrawing.childRecipe,
+            "setHeadersFromRecipe",
+            hType + " header",
           );
         }
       }
@@ -1661,22 +1758,32 @@
           hType,
           "footer",
         );
-        for (var r = count - 1; r >= 0; r--) {
+        if (footer.RemoveAllElements) {
           try {
-            footer.RemoveElement(r);
+            footer.RemoveAllElements();
           } catch (e) {
-            console.error(
-              "setFootersFromRecipe: RemoveElement(",
-              r,
-              ") failed",
-              e,
-            );
+            console.error("setFootersFromRecipe: RemoveAllElements failed", e);
+          }
+        } else {
+          for (var r = count - 1; r >= 0; r--) {
+            try {
+              footer.RemoveElement(r);
+            } catch (e) {
+              console.error(
+                "setFootersFromRecipe: RemoveElement(",
+                r,
+                ") failed",
+                e,
+              );
+            }
           }
         }
       }
 
       // Create children (line / textbox / image)
       var children = hRecipe.children || [];
+      var drawingAnchorParagraph = null;
+      var pendingDrawings = [];
       console.log(
         "setFootersFromRecipe: creating",
         children.length,
@@ -1691,6 +1798,46 @@
           "] type =",
           childRecipe.type,
         );
+
+        if (childRecipe.type === "paragraph") {
+          try {
+            var footerParagraph = createParagraphFromRecipe(
+              doc,
+              childRecipe,
+              hRecipe,
+            );
+            if (footerParagraph) {
+              footer.Push(footerParagraph);
+              if (!drawingAnchorParagraph) {
+                drawingAnchorParagraph = footerParagraph;
+                for (var pd = 0; pd < pendingDrawings.length; pd++) {
+                  var pendingFooterDrawing = pendingDrawings[pd];
+                  attachShapeToParagraph(
+                    doc,
+                    drawingAnchorParagraph,
+                    pendingFooterDrawing.shape,
+                    pendingFooterDrawing.childRecipe,
+                    "setFootersFromRecipe",
+                    hType + " footer",
+                  );
+                }
+                pendingDrawings = [];
+              }
+              console.log(
+                "setFootersFromRecipe: Added paragraph to",
+                hType,
+                "footer",
+              );
+            }
+          } catch (e) {
+            console.error(
+              "setFootersFromRecipe: failed to add paragraph to footer",
+              e,
+            );
+          }
+          continue;
+        }
+
         var shape = null;
 
         try {
@@ -1723,30 +1870,20 @@
         );
         if (shape) {
           try {
-            var para = Api.CreateParagraph();
-            para.AddDrawing(shape);
-            footer.Push(para);
-            if (childRecipe.type === "textbox") {
-              applyTextboxPaddings(shape, childRecipe);
-            }
-            console.log(
-              "setFootersFromRecipe: Added",
-              childRecipe.type,
-              "to",
-              hType,
-              "footer",
-            );
-
-            // Populate textbox content AFTER it's been added to the document
-            if (childRecipe.type === "textbox" && childRecipe.children) {
-              try {
-                populateTextboxContent(doc, shape, childRecipe);
-              } catch (e) {
-                console.error(
-                  "setFootersFromRecipe: populateTextboxContent failed",
-                  e,
-                );
-              }
+            if (drawingAnchorParagraph) {
+              attachShapeToParagraph(
+                doc,
+                drawingAnchorParagraph,
+                shape,
+                childRecipe,
+                "setFootersFromRecipe",
+                hType + " footer",
+              );
+            } else {
+              pendingDrawings.push({
+                shape: shape,
+                childRecipe: childRecipe,
+              });
             }
           } catch (e) {
             console.error(
@@ -1759,6 +1896,25 @@
             "setFootersFromRecipe: shape is falsy for child[",
             c,
             "], skipping",
+          );
+        }
+      }
+
+      if (pendingDrawings.length) {
+        drawingAnchorParagraph = getOrCreateDrawingAnchor(
+          footer,
+          "setFootersFromRecipe",
+          hType + " footer",
+        );
+        for (var pf = 0; pf < pendingDrawings.length; pf++) {
+          var pendingFooterShape = pendingDrawings[pf];
+          attachShapeToParagraph(
+            doc,
+            drawingAnchorParagraph,
+            pendingFooterShape.shape,
+            pendingFooterShape.childRecipe,
+            "setFootersFromRecipe",
+            hType + " footer",
           );
         }
       }
